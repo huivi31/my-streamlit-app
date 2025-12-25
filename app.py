@@ -16,17 +16,14 @@ import networkx as nx
 st.set_page_config(
     page_title="DeepGraph Pro", 
     layout="wide", 
-    page_icon="🚀",
+    page_icon="☁️",
     initial_sidebar_state="expanded"
 )
 
 # --- 2. 样式优化 ---
 st.markdown("""
 <style>
-    .stApp {
-        background-color: #f8f9fa;
-        color: #212529;
-    }
+    .stApp { background-color: #f8f9fa; color: #212529; }
     .glass-card {
         background: white;
         border: 1px solid #e0e0e0;
@@ -48,7 +45,6 @@ if 'graph_html' not in st.session_state: st.session_state.graph_html = ""
 if 'report_txt' not in st.session_state: st.session_state.report_txt = ""
 
 # --- 4. 核心功能 ---
-
 def extract_text(file_path):
     ext = file_path.lower().split('.')[-1]
     text = ""
@@ -77,36 +73,41 @@ def analyze_svo(chunk_data):
     【任务】提取SVO图谱。Head=发起者。
     【分类】[HighRisk], [Faction], [Person], [Outcome], [NoRisk]。
     【格式】JSON: [{{"head": "发起者", "type_head": "类型", "relation": "主动谓语", "tail": "承受者", "type_tail": "类型"}}]
-    文本: {text[:1000]}...
+    文本: {text[:1500]}...
     """
     try:
+        # 云端版并发控制
+        time.sleep(1) 
         response = client.models.generate_content(model=model, contents=prompt)
         raw = response.text.replace("```json", "").replace("```", "").strip()
         s, e = raw.find('['), raw.rfind(']') + 1
         return json.loads(raw[s:e]) if s != -1 else []
-    except: return []
+    except Exception as e:
+        print(f"Error: {e}")
+        return []
 
 def main_run(files, api_key, model):
     chunks = []
     for f in files:
         txt = extract_text(f)
         if len(txt) > 100:
-            subs = [txt[i:i+60000] for i in range(0, len(txt), 60000)]
+            subs = [txt[i:i+50000] for i in range(0, len(txt), 50000)]
             for i, s in enumerate(subs): chunks.append((i, s, api_key, model))
     
-    if not chunks: return None, "❌ 读取失败或内容为空"
+    if not chunks: return None, "❌ 文件内容为空或读取失败"
 
-    st.info(f"🚀 正在分析 {len(chunks)} 个片段...")
+    st.info(f"🚀 云端引擎启动：分析 {len(chunks)} 个片段...")
     bar = st.progress(0)
     raw = []
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as exe:
+    # 降低并发以适应免费 Cloud 环境
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as exe:
         futures = [exe.submit(analyze_svo, c) for c in chunks]
         for i, f in enumerate(concurrent.futures.as_completed(futures)):
             if res := f.result(): raw.extend(res)
             bar.progress((i+1)/len(chunks))
 
-    if not raw: return None, "❌ 未提取到数据，请检查 Key 权限或更换模型 ID"
+    if not raw: return None, "❌ 未提取到数据，请检查 API Key 或模型权限"
 
     G = nx.DiGraph()
     COLORS = {"HighRisk": "#dc3545", "Person": "#0d6efd", "Outcome": "#6c757d", "Faction": "#6f42c1", "NoRisk": "#198754"}
@@ -130,20 +131,21 @@ st.title("DeepGraph Pro (Cloud Edition)")
 
 with st.sidebar:
     st.header("Settings")
-    st.info("☁️ 云端部署版: 无需代理，请直接使用 API Key")
+    st.success("✅ 云端环境已就绪")
     
     api_key = st.text_input("Google API Key", type="password")
+    # 默认使用最稳的 2.0 Flash
     model_id = st.text_input("Model ID", value="gemini-2.0-flash-exp")
     
-    if st.button("🔍 Check Models"):
+    if st.button("🔍 Check Available Models"):
         if not api_key:
-            st.error("Please enter API Key")
+            st.error("Please enter API Key first")
         else:
             try:
                 client = genai.Client(api_key=api_key)
+                # 修复：新版 SDK 迭代器写法
                 models = [m.name for m in client.models.list() if "gemini" in m.name]
-                st.success("Available Models:")
-                st.code("\n".join(models))
+                st.write(models)
             except Exception as e:
                 st.error(f"Error: {e}")
 
@@ -151,21 +153,22 @@ col1, col2 = st.columns([1, 2])
 
 with col1:
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    files = st.file_uploader("Upload Files", accept_multiple_files=True)
+    # 修复：去掉了 label 参数，只留提示词
+    files = st.file_uploader("Upload Files (PDF/DOCX/TXT)", accept_multiple_files=True)
     st.markdown("<br>", unsafe_allow_html=True)
     start = st.button("🚀 Start Analysis")
     st.markdown('</div>', unsafe_allow_html=True)
     
     if st.session_state.processed:
-        st.download_button("Download HTML", st.session_state.graph_html, "graph.html", "text/html")
-        st.download_button("Download Report", st.session_state.report_txt, "report.txt", "text/plain")
+        st.download_button("Download Graph HTML", st.session_state.graph_html, "graph.html", "text/html")
+        st.download_button("Download Report TXT", st.session_state.report_txt, "report.txt", "text/plain")
 
 with col2:
     if start:
         if not api_key or not files:
-            st.error("Missing API Key or Files")
+            st.error("请填入 API Key 并上传文件")
         else:
-            with st.spinner("Analyzing..."):
+            with st.spinner("Analyzing on Cloud..."):
                 G, rpt = main_run(files, api_key, model_id)
                 if G:
                     net = Network(height="700px", width="100%", bgcolor="white", font_color="#333", directed=True)
