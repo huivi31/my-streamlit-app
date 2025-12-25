@@ -1,5 +1,5 @@
 import streamlit as st
-import os, json, time, random, threading, re
+import os, json, time, random, threading
 import concurrent.futures
 from collections import Counter
 import pypdf
@@ -419,6 +419,9 @@ def main_run(files, api_key, model):
         type_counts[item['type_head']] = type_counts.get(item['type_head'], 0) + 1
         type_counts[item['type_tail']] = type_counts.get(item['type_tail'], 0) + 1
     
+    # Determine status message
+    status_msg = "已自动裁剪至前300个高频节点" if was_trimmed else "无需裁剪"
+    
     summary = f"""# DeepGraph Report Summary
 
 ## 统计信息
@@ -435,7 +438,7 @@ def main_run(files, api_key, model):
 
 ## 图谱信息
 - **边样式**: 实线=主动关系, 虚线=被动关系
-- {'**状态**: 已自动裁剪至前300个高频节点' if was_trimmed else '**状态**: 无需裁剪'}
+- **状态**: {status_msg}
 
 ---
 
