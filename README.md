@@ -21,7 +21,7 @@
 
 ## ✨ 核心功能 (Key Features)
 
-* **⚡️ 极速分析 (Flash Speed)**: 集成 `gemini-2.0-flash-exp` 模型，支持超长文本的秒级推理。
+* **⚡️ 极速分析 (Flash Speed)**: 集成 `gemini` 模型，支持超长文本的秒级推理。
 * **📄 多格式支持**: 完美解析 `PDF`, `EPUB`, `DOCX`, `TXT` 等多种文档格式。
 * **🔍 智能 SVO 提取**: 自动识别实体关系，并进行类型分类（如：HighRisk, Faction, Person, Outcome）。
 * **🕸️ 交互式图谱**: 基于 `PyVis` 和 `NetworkX` 构建的物理引擎图谱，支持拖拽、缩放和节点高亮。
