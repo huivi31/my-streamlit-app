@@ -1,5 +1,5 @@
 import streamlit as st
-import os, json, time, concurrent.futures, io, tempfile, re
+import os, json, time, concurrent.futures, io, tempfile, re, itertools
 from collections import Counter
 import pypdf
 from docx import Document
@@ -9,6 +9,13 @@ from bs4 import BeautifulSoup
 from google import genai
 from pyvis.network import Network
 import networkx as nx
+
+# 社区检测（可选）
+try:
+    import community as community_louvain
+    HAS_LOUVAIN = True
+except Exception:
+    HAS_LOUVAIN = False
 
 # --- 页面配置 ---
 st.set_page_config(
@@ -74,16 +81,16 @@ if "truncated" not in st.session_state:
     st.session_state.truncated = False
 
 # --- 参数（速度 + 精准） ---
-MAX_WORKERS = 8          # 并发；注意 API 限流
-CHUNK_LEN = 3200         # 大分片减少调用次数
-OVERLAP = 200            # 小重叠保证连续
+MAX_WORKERS = 8
+CHUNK_LEN = 3200
+OVERLAP = 200
 STOP_REL = {"是","有","存在","包含","涉及","包括","进行","开展","属于","位于","担任","任职"}
 
 ALIASES = {
     "邓小平": ["小平", "邓公"],
     "毛泽东": ["毛主席", "毛泽东主席"],
     "习近平": ["习", "近平"],
-    # 可按需扩展
+    # 可扩展
 }
 
 COLORS = {
@@ -101,7 +108,6 @@ STYLE = {
     "passive": {"color": "#7f8ea3", "dashes": True},
 }
 
-# 高风险/中风险事件词、强动作词
 RISK_HIGH = [
     "六四","法轮功","台独","藏独","疆独","颜色革命","颠覆","反党","分裂","群体事件","游行","示威",
     "暴乱","戒严","维稳","镇压","枪击","开枪","抓捕","拘留","逮捕","军机","军演","导弹","核试",
@@ -143,7 +149,6 @@ def split_text(txt, size=CHUNK_LEN, overlap=OVERLAP):
     return out
 
 def extract_text(file_obj):
-    """兼容 UploadedFile/路径；内存解析 PDF/EPUB/DOCX/文本。"""
     file_name = getattr(file_obj, "name", "") or (file_obj if isinstance(file_obj, str) else "")
     ext = file_name.lower().rsplit(".", 1)[-1] if "." in file_name else ""
     if not ext:
@@ -219,7 +224,6 @@ def score_event(text_chunk: str, relation: str) -> int:
 def score_actor(name: str) -> int:
     if not name:
         return 0
-    # 粗粒度层级：中央/军委/部委/战区/国家领导人 > 省部级 > 地方 > 个人
     central_kw = ["中央","国务院","军委","全国人大","全国政协","中宣部","中组部","中纪委","政法委","网信办","国安委",
                   "战区","军区","司令部","总部","部委","外交部","国防部","公安部","国安部","发改委","财政部"]
     prov_kw = ["省委","省政府","自治区","直辖市","省军区","武警总队","厅局","省级"]
@@ -230,8 +234,20 @@ def score_actor(name: str) -> int:
         return 2
     if any(k in name for k in local_kw):
         return 1
-    # 领导人常见姓名可在 ALIASES 扩展；默认个人 0
     return 0
+
+def build_cooccur_edges(chunk_text: str, entities: list, min_freq=2):
+    co = Counter()
+    sentences = re.split(r"[。！？!?]\s*", chunk_text)
+    for sent in sentences:
+        present = set()
+        for e in entities:
+            for n in (e.get("head"), e.get("tail")):
+                if n and n in sent:
+                    present.add(n)
+        for u, v in itertools.combinations(sorted(present), 2):
+            co[frozenset({u, v})] += 1
+    return {pair: f for pair, f in co.items() if f >= min_freq}
 
 @st.cache_resource
 def get_client(api_key):
@@ -265,11 +281,14 @@ def trim_graph(raw, max_nodes=300, min_nodes=50):
 # --- 核心流程 ---
 def main_run(files, api_key, model):
     chunks = []
+    chunk_texts = {}
     for f in files:
         txt = extract_text(f)
         if len(txt) > 100:
             for i, s in enumerate(split_text(txt)):
-                chunks.append((f"{getattr(f,'name',str(f))}-{i}", s))
+                cid = f"{getattr(f,'name',str(f))}-{i}"
+                chunks.append((cid, s))
+                chunk_texts[cid] = s
 
     if not chunks:
         return None, "❌ 文件内容为空或读取失败", False
@@ -290,7 +309,7 @@ def main_run(files, api_key, model):
     if not raw:
         return None, "❌ 未提取到数据，请检查 API Key 或模型权限", False
 
-    # 归一 + 谓语过滤 + 方向修正 + 风险/主体评分
+    # 归一/过滤/评分
     scored = []
     for it in raw:
         h, t, r = canonicalize(it.get("head")), canonicalize(it.get("tail")), it.get("relation")
@@ -300,18 +319,21 @@ def main_run(files, api_key, model):
             continue
         it["head"], it["tail"] = h, t
         it["direction"] = infer_direction(r, default=it.get("direction", "active"))
-        ev_score = score_event("", r)  # 当前未带上下文 chunk，可按需传 chunk 文本
+        ev_score = score_event("", r)  # 这里未加 chunk 文本，可按需增强
         act_score = max(score_actor(h), score_actor(t))
         total = ev_score + act_score
         it["_score"] = total
         scored.append(it)
 
-    # 过滤低分（柔性，可调阈值）
-    MIN_SCORE = 1  # >=1 保留，高风险/高层会远高于此
+    MIN_SCORE = 1
     scored = [it for it in scored if it["_score"] >= MIN_SCORE]
-
-    # 排序：按分数降序
     scored.sort(key=lambda x: x.get("_score", 0), reverse=True)
+
+    # 共现虚边统计
+    co_counter = Counter()
+    for cid, ctext in chunk_texts.items():
+        co_map = build_cooccur_edges(ctext, scored, min_freq=2)
+        co_counter.update(co_map)
 
     # 节点裁剪仅影响展示，不影响抽取
     norm, truncated = trim_graph(scored, max_nodes=300, min_nodes=50)
@@ -324,19 +346,54 @@ def main_run(files, api_key, model):
         tt = item.get("type_tail", "Person")
         direction = item.get("direction", "active")
         edge_style = STYLE.get(direction, STYLE["active"])
-        G.add_node(h, label=h, color=COLORS.get(ht, "#7c9dff"), size=20)
-        G.add_node(t, label=t, color=COLORS.get(tt, "#7c9dff"), size=20)
+        G.add_node(h, label=h, color=COLORS.get(ht, "#7c9dff"), size=22)
+        G.add_node(t, label=t, color=COLORS.get(tt, "#7c9dff"), size=22)
         label = r if len(r) <= 28 else r[:25] + "..."
-        G.add_edge(h, t, label=label, color=edge_style["color"], smooth=True, arrows="to", dashes=edge_style["dashes"])
+        G.add_edge(
+            h, t,
+            label=label,
+            color=edge_style["color"],
+            smooth=True,
+            arrows="to",
+            dashes=edge_style["dashes"],
+            weight=3.0
+        )
+
+    # 共现虚边（无向，画成无箭头虚线，低权重）
+    for pair, freq in co_counter.items():
+        u, v = tuple(pair)
+        if not G.has_node(u):
+            G.add_node(u, label=u, color=COLORS.get("Unknown", "#94a3b8"), size=18)
+        if not G.has_node(v):
+            G.add_node(v, label=v, color=COLORS.get("Unknown", "#94a3b8"), size=18)
+        if not G.has_edge(u, v) and not G.has_edge(v, u):
+            G.add_edge(
+                u, v,
+                label=f"co-occur({freq})",
+                color="#6b7280",
+                smooth=True,
+                arrows="none",
+                dashes=True,
+                weight=0.4
+            )
+
+    # 社区着色（可选）
+    if HAS_LOUVAIN:
+        undi = G.to_undirected()
+        part = community_louvain.best_partition(undi, weight="weight")
+        palette = ["#4ae0c8","#7c9dff","#c084fc","#22c55e","#f59e0b","#ef4444","#8b5cf6","#0ea5e9"]
+        for n, comm in part.items():
+            G.nodes[n]["color"] = palette[comm % len(palette)]
 
     # 报告
     rpt = "# DeepGraph Report\n\n"
     rpt += f"- 节点数: {len(G.nodes())}\n- 边数: {len(G.edges())}\n"
     if truncated:
         rpt += "- 注意：节点已截断到前 300 个最相关节点（仅影响展示，抽取未截断）。\n"
-    rpt += "## 高分关系（按风险/主体分排序）\n"
+    rpt += "## 高分关系（按风险/主体分排序，前 200 条）\n"
     for it in scored[:200]:
         rpt += f"[{it.get('_score',0)}] {it['head']} --[{it['relation']}]--> {it['tail']} ({it.get('direction','active')})\n"
+    rpt += f"\n## 共现虚边数: {len(co_counter)} (频次>=2)\n"
 
     return G, rpt, truncated
 
@@ -382,7 +439,7 @@ with col2:
         f"""
         <div class='glass-card' style='padding:12px 16px; display:flex; gap:10px; align-items:center;'>
           <span style='padding:6px 12px; border-radius:999px; background:rgba(74,224,200,0.18); color:#4ae0c8; font-weight:800;'>{status}</span>
-          <span style='color:#cbd5e1;'>云端 SVO 图谱分析（敏感优先 · 高速模式）</span>
+          <span style='color:#cbd5e1;'>云端 SVO 图谱分析（敏感优先 · 高速模式 + 共现联结）</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -396,7 +453,7 @@ with col2:
                 G, rpt, truncated = main_run(files, api_key, model_id)
                 if G:
                     net = Network(
-                        height="720px",
+                        height="760px",
                         width="100%",
                         bgcolor="#0c1224",
                         font_color="#e6edf7",
@@ -414,4 +471,4 @@ with col2:
     if st.session_state.processed:
         if st.session_state.truncated:
             st.warning("⚠️ 节点已截断至前 300 个最相关节点（仅影响展示，抽取未截断）")
-        st.components.v1.html(st.session_state.graph_html, height=720)
+        st.components.v1.html(st.session_state.graph_html, height=760)
