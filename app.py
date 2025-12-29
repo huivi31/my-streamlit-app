@@ -7,7 +7,6 @@ import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
 from google import genai
-from google.genai import types
 from pyvis.network import Network
 import networkx as nx
 
@@ -15,104 +14,136 @@ import networkx as nx
 st.set_page_config(
     page_title="DeepGraph Pro",
     layout="wide",
-    page_icon="☁️",
+    page_icon="🪐",
     initial_sidebar_state="expanded"
 )
 
-# --- 未来感样式 ---
-st.markdown("""
+# --- 未来感 + 毛玻璃 UI ---
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 :root {
-    --bg1: #0f172a; --bg2: #111827; --card: rgba(255,255,255,0.08);
-    --border: rgba(255,255,255,0.18); --primary: #5b8cff; --accent: #00d1ff;
+  --bg1:#0c1224; --bg2:#0f1b2f; --card:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.16); --primary:#4ae0c8; --accent:#7c6bff; --accent2:#18b4e6;
 }
 .stApp {
-    background: radial-gradient(120% 120% at 20% 20%, rgba(91,140,255,0.25), transparent 40%),
-                radial-gradient(100% 100% at 80% 0%, rgba(0,209,255,0.18), transparent 45%),
-                linear-gradient(135deg, var(--bg1), var(--bg2));
-    color: #e5e7eb; font-family: 'Inter', sans-serif;
+  background:
+    radial-gradient(120% 120% at 20% 20%, rgba(74,224,200,0.20), transparent 40%),
+    radial-gradient(90% 90% at 80% 0%, rgba(124,107,255,0.18), transparent 42%),
+    linear-gradient(145deg, var(--bg1), var(--bg2));
+  color:#e6edf7; font-family:'Inter',sans-serif;
 }
 .glass-card {
-    background: var(--card); border: 1px solid var(--border);
-    backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    box-shadow: 0 20px 60px rgba(0,209,255,0.16), 0 8px 24px rgba(0,0,0,0.28);
-    border-radius: 16px; padding: 20px 20px 16px; transition: all 180ms ease;
+  background:var(--card); border:1px solid var(--border);
+  backdrop-filter:blur(20px) saturate(1.4); -webkit-backdrop-filter:blur(20px) saturate(1.4);
+  box-shadow:0 18px 48px rgba(16,185,240,0.18), 0 18px 48px rgba(124,107,255,0.12);
+  border-radius:18px; padding:18px 18px 14px; transition:all 180ms ease;
 }
-.glass-card:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(0,0,0,0.32), 0 20px 60px rgba(0,209,255,0.16); }
+.glass-card:hover { transform:translateY(-2px); box-shadow:0 22px 52px rgba(16,185,240,0.28), 0 22px 52px rgba(124,107,255,0.18); }
 .stButton > button, .stDownloadButton > button {
-    background: linear-gradient(120deg, var(--primary), var(--accent));
-    color:#fff; border:none; border-radius:10px; height:44px; font-weight:700; letter-spacing:0.2px;
-    box-shadow:0 10px 30px rgba(91,140,255,0.35); transition:all 150ms ease;
+  background:linear-gradient(120deg, var(--primary), var(--accent));
+  color:#fff; border:none; border-radius:12px; height:44px; font-weight:700; letter-spacing:0.2px;
+  box-shadow:0 14px 30px rgba(72,211,200,0.35); transition:all 140ms ease;
 }
-.stButton > button:hover, .stDownloadButton > button:hover { filter: brightness(1.06); box-shadow:0 14px 34px rgba(0,209,255,0.35); transform: translateY(-1px); }
+.stButton > button:hover, .stDownloadButton > button:hover {
+  filter:brightness(1.06); box-shadow:0 16px 36px rgba(124,107,255,0.35); transform:translateY(-1px);
+}
 .stTextInput > div > div > input, .stTextArea > div > textarea, .stSelectbox > div > div > div {
-    background: rgba(255,255,255,0.06) !important; border: 1px solid var(--border) !important;
-    border-radius: 10px !important; color: #e5e7eb !important;
+  background:rgba(255,255,255,0.06) !important; border:1px solid var(--border) !important;
+  border-radius:12px !important; color:#e5e7eb !important;
 }
-.stProgress > div > div { background: rgba(255,255,255,0.08); border-radius: 999px; }
-.stProgress > div > div > div { background: linear-gradient(120deg, var(--primary), var(--accent)); box-shadow: 0 4px 16px rgba(91,140,255,0.4); }
+.stProgress > div > div { background:rgba(255,255,255,0.08); border-radius:999px; }
+.stProgress > div > div > div {
+  background:linear-gradient(120deg, var(--primary), var(--accent2));
+  box-shadow:0 6px 18px rgba(72,211,200,0.35);
+}
 </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
 # --- 状态管理 ---
-if 'processed' not in st.session_state: st.session_state.processed = False
-if 'graph_html' not in st.session_state: st.session_state.graph_html = ""
-if 'report_txt' not in st.session_state: st.session_state.report_txt = ""
-if 'truncated' not in st.session_state: st.session_state.truncated = False
+if "processed" not in st.session_state:
+    st.session_state.processed = False
+if "graph_html" not in st.session_state:
+    st.session_state.graph_html = ""
+if "report_txt" not in st.session_state:
+    st.session_state.report_txt = ""
+if "truncated" not in st.session_state:
+    st.session_state.truncated = False
 
-# --- 参数（加速且不截断内容） ---
-MAX_WORKERS = 8          # 提高并发，注意 API 限流
-CHUNK_LEN = 3200         # 更大分片，减少调用次数
-OVERLAP = 200            # 减少重叠，保证连续性
+# --- 参数（速度 + 精准） ---
+MAX_WORKERS = 8          # 并发；注意 API 限流
+CHUNK_LEN = 3200         # 大分片减少调用次数
+OVERLAP = 200            # 小重叠保证连续
 STOP_REL = {"是","有","存在","包含","涉及","包括","进行","开展","属于","位于","担任","任职"}
+
 ALIASES = {
     "邓小平": ["小平", "邓公"],
     "毛泽东": ["毛主席", "毛泽东主席"],
     "习近平": ["习", "近平"],
-    # 可继续扩展重要主体/机构/事件
+    # 可按需扩展
 }
 
 COLORS = {
-    "Person": "#5b8cff",
-    "Org": "#f59e0b",
-    "Event": "#a78bfa",
-    "Outcome": "#94a3b8",
+    "Person": "#7c9dff",
+    "Org": "#4ae0c8",
+    "Event": "#c084fc",
+    "Outcome": "#9ca3af",
     "Location": "#22c55e",
-    "Unknown": "#adb5bd",
+    "Unknown": "#94a3b8",
     "HighRisk": "#ff6b6b",
-    "NoRisk": "#22c55e"
+    "NoRisk": "#22c55e",
 }
 STYLE = {
-    "active": {"color": "#adb5bd", "dashes": False},
-    "passive": {"color": "#6c757d", "dashes": True}
+    "active": {"color": "#bcd7ff", "dashes": False},
+    "passive": {"color": "#7f8ea3", "dashes": True},
 }
 
+# 高风险/中风险事件词、强动作词
+RISK_HIGH = [
+    "六四","法轮功","台独","藏独","疆独","颜色革命","颠覆","反党","分裂","群体事件","游行","示威",
+    "暴乱","戒严","维稳","镇压","枪击","开枪","抓捕","拘留","逮捕","军机","军演","导弹","核试",
+    "机密","泄密","制裁","封锁","封禁","删帖","下架","约谈","审查","封号","黑名单","切断通信","叛逃",
+]
+RISK_MED = [
+    "反腐","调查","处分","整顿","整改","约束","限流","删除","撤稿","禁言","暂停","罚款","打击","查处",
+    "问责","召回","停售","关停","停业","封存","管控","封控","隔离","舆情","不当言论","不实信息",
+]
+ACT_STRONG = [
+    "镇压","抓捕","拘留","逮捕","判决","枪击","开枪","封禁","下架","删帖","封号","约谈","驱散",
+    "戒严","封锁","切断","围堵","驱逐","开除","免职","查封","停职","审查","封存","禁言","限流",
+]
+
 PROMPT = """
-你是信息抽取助手，面向政治/历史文本，提取 SVO 有向三元组。
+你是信息抽取助手，面向政治/历史敏感文本，提取 SVO 有向三元组。
 字段: head(主体/发起者), relation(精确谓语), tail(客体/承受者), direction(active|passive),
 type_head/type_tail ∈ [Person, Org, Event, Location, Outcome, Unknown]。
-direction 规则：Head 主动作用 Tail = active；Head 被 Tail 作用 = passive。
-输出 JSON 数组，无效则 []。保持谓语原文，不要概括合并；禁止编造文本之外的信息。
-请仅依据下列文本（可能被截断），不要使用外部知识：
+仅抽取与敏感事件/高层主体相关的关系：群体事件、反党/颠覆、分裂/独立、重大维稳/封禁/删除/下架/约谈/抓捕、
+军政机密/调动、涉外摩擦、高层斗争、反腐大案、重大监管/行业整顿。
+第一人称叙述若涉及上述敏感事件或高层主体，也应保留；日常礼节或琐事可忽略。
+若文本无敏感事件或重要主体/动作，返回 []。
+方向：出现“被/遭/逮捕/拘留/镇压/封禁/删除”等判定 passive，其余 active。
+谓语保留原文动词，不用“是/有/进行/开展”等泛化词。
+按风险和主体级别排序输出：中央/军委/国家领导人 > 部委/省级 > 地方/个人；高敏感事件 > 中 > 低。
+
+仅依据下列文本，不要使用外部知识（可能被截断）：
 {text}
 """
 
 # --- 辅助函数 ---
 def split_text(txt, size=CHUNK_LEN, overlap=OVERLAP):
     out = []
-    n = len(txt); i = 0
+    n = len(txt)
+    i = 0
     while i < n:
-        out.append(txt[i:i+size])
+        out.append(txt[i : i + size])
         i += size - overlap
     return out
 
 def extract_text(file_obj):
-    """
-    兼容 Streamlit UploadedFile 或本地路径字符串。
-    - 安全获取扩展名
-    - 内存读取，必要时落盘到临时文件供解析库使用
-    """
+    """兼容 UploadedFile/路径；内存解析 PDF/EPUB/DOCX/文本。"""
     file_name = getattr(file_obj, "name", "") or (file_obj if isinstance(file_obj, str) else "")
     ext = file_name.lower().rsplit(".", 1)[-1] if "." in file_name else ""
     if not ext:
@@ -120,9 +151,11 @@ def extract_text(file_obj):
 
     if hasattr(file_obj, "read"):
         data = file_obj.read()
-        if hasattr(file_obj, "seek"): file_obj.seek(0)
+        if hasattr(file_obj, "seek"):
+            file_obj.seek(0)
     else:
-        with open(file_obj, "rb") as f: data = f.read()
+        with open(file_obj, "rb") as f:
+            data = f.read()
 
     text = ""
     try:
@@ -132,7 +165,8 @@ def extract_text(file_obj):
                 text += (page.extract_text() or "") + "\n"
         elif ext == "epub":
             with tempfile.NamedTemporaryFile(delete=False, suffix=".epub") as tmp:
-                tmp.write(data); tmp_path = tmp.name
+                tmp.write(data)
+                tmp_path = tmp.name
             try:
                 book = epub.read_epub(tmp_path)
                 for item in list(book.get_items_of_type(ebooklib.ITEM_DOCUMENT)):
@@ -150,7 +184,8 @@ def extract_text(file_obj):
     return text
 
 def canonicalize(name: str) -> str:
-    if not name: return name
+    if not name:
+        return name
     name = name.strip()
     for canon, alias_list in ALIASES.items():
         if name == canon or name in alias_list:
@@ -163,21 +198,52 @@ def canonicalize(name: str) -> str:
     return name
 
 def infer_direction(relation: str, default="active"):
-    if not relation: return default
-    if re.search(r"(被|遭|受|遭受|遭到|逮捕|拘留|打击|镇压|制裁|迫害)", relation):
+    if not relation:
+        return default
+    if re.search(r"(被|遭|受|逮捕|拘留|镇压|封禁|删除|下架|驱散|开除|免职|制裁)", relation):
         return "passive"
     return default
 
+def score_event(text_chunk: str, relation: str) -> int:
+    score = 0
+    def has_any(words):
+        return any(w in text_chunk or (relation and w in relation) for w in words)
+    if has_any(RISK_HIGH):
+        score += 3
+    elif has_any(RISK_MED):
+        score += 2
+    if relation and any(w in relation for w in ACT_STRONG):
+        score += 1
+    return score
+
+def score_actor(name: str) -> int:
+    if not name:
+        return 0
+    # 粗粒度层级：中央/军委/部委/战区/国家领导人 > 省部级 > 地方 > 个人
+    central_kw = ["中央","国务院","军委","全国人大","全国政协","中宣部","中组部","中纪委","政法委","网信办","国安委",
+                  "战区","军区","司令部","总部","部委","外交部","国防部","公安部","国安部","发改委","财政部"]
+    prov_kw = ["省委","省政府","自治区","直辖市","省军区","武警总队","厅局","省级"]
+    local_kw = ["市委","市政府","州政府","县委","县政府","区委","镇政府","街道","乡镇","派出所","基层"]
+    if any(k in name for k in central_kw):
+        return 3
+    if any(k in name for k in prov_kw):
+        return 2
+    if any(k in name for k in local_kw):
+        return 1
+    # 领导人常见姓名可在 ALIASES 扩展；默认个人 0
+    return 0
+
 @st.cache_resource
-def get_client(api_key): return genai.Client(api_key=api_key)
+def get_client(api_key):
+    return genai.Client(api_key=api_key)
 
 def analyze_svo(chunk_data, client, model):
     i, text = chunk_data
-    prompt = PROMPT.format(text=text)  # 用整段分片，不截断
+    prompt = PROMPT.format(text=text)
     try:
         resp = client.models.generate_content(model=model, contents=prompt)
-        raw = resp.text.replace("```json","").replace("```","").strip()
-        s, e = raw.find('['), raw.rfind(']')+1
+        raw = resp.text.replace("```json", "").replace("```", "").strip()
+        s, e = raw.find("["), raw.rfind("]") + 1
         return json.loads(raw[s:e]) if s != -1 else []
     except Exception as e:
         print(f"[chunk {i}] error: {e}")
@@ -205,7 +271,8 @@ def main_run(files, api_key, model):
             for i, s in enumerate(split_text(txt)):
                 chunks.append((f"{getattr(f,'name',str(f))}-{i}", s))
 
-    if not chunks: return None, "❌ 文件内容为空或读取失败", False
+    if not chunks:
+        return None, "❌ 文件内容为空或读取失败", False
 
     st.info(f"🚀 云端引擎启动：分析 {len(chunks)} 个片段（全量，不截断）...")
     bar = st.progress(0)
@@ -216,23 +283,38 @@ def main_run(files, api_key, model):
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as exe:
         futures = [exe.submit(analyze_svo, c, client, model) for c in chunks]
         for i, f in enumerate(concurrent.futures.as_completed(futures)):
-            if res := f.result(): raw.extend(res)
-            bar.progress((i+1)/len(chunks))
+            if res := f.result():
+                raw.extend(res)
+            bar.progress((i + 1) / len(chunks))
 
-    if not raw: return None, "❌ 未提取到数据，请检查 API Key 或模型权限", False
+    if not raw:
+        return None, "❌ 未提取到数据，请检查 API Key 或模型权限", False
 
-    # 归一 + 谓语过滤 + 方向修正
-    norm = []
+    # 归一 + 谓语过滤 + 方向修正 + 风险/主体评分
+    scored = []
     for it in raw:
         h, t, r = canonicalize(it.get("head")), canonicalize(it.get("tail")), it.get("relation")
-        if not h or not t or not r: continue
-        if r in STOP_REL: continue
+        if not h or not t or not r:
+            continue
+        if r in STOP_REL:
+            continue
         it["head"], it["tail"] = h, t
-        it["direction"] = infer_direction(r, default=it.get("direction","active"))
-        norm.append(it)
+        it["direction"] = infer_direction(r, default=it.get("direction", "active"))
+        ev_score = score_event("", r)  # 当前未带上下文 chunk，可按需传 chunk 文本
+        act_score = max(score_actor(h), score_actor(t))
+        total = ev_score + act_score
+        it["_score"] = total
+        scored.append(it)
 
-    # 节点裁剪（图展示用，不影响抽取全量）
-    norm, truncated = trim_graph(norm, max_nodes=300, min_nodes=50)
+    # 过滤低分（柔性，可调阈值）
+    MIN_SCORE = 1  # >=1 保留，高风险/高层会远高于此
+    scored = [it for it in scored if it["_score"] >= MIN_SCORE]
+
+    # 排序：按分数降序
+    scored.sort(key=lambda x: x.get("_score", 0), reverse=True)
+
+    # 节点裁剪仅影响展示，不影响抽取
+    norm, truncated = trim_graph(scored, max_nodes=300, min_nodes=50)
 
     # 构图
     G = nx.DiGraph()
@@ -242,26 +324,24 @@ def main_run(files, api_key, model):
         tt = item.get("type_tail", "Person")
         direction = item.get("direction", "active")
         edge_style = STYLE.get(direction, STYLE["active"])
-        G.add_node(h, label=h, color=COLORS.get(ht, "#5b8cff"), size=20)
-        G.add_node(t, label=t, color=COLORS.get(tt, "#5b8cff"), size=20)
+        G.add_node(h, label=h, color=COLORS.get(ht, "#7c9dff"), size=20)
+        G.add_node(t, label=t, color=COLORS.get(tt, "#7c9dff"), size=20)
         label = r if len(r) <= 28 else r[:25] + "..."
         G.add_edge(h, t, label=label, color=edge_style["color"], smooth=True, arrows="to", dashes=edge_style["dashes"])
 
     # 报告
     rpt = "# DeepGraph Report\n\n"
     rpt += f"- 节点数: {len(G.nodes())}\n- 边数: {len(G.edges())}\n"
-    type_cnt = Counter([n[1].get('color') for n in G.nodes(data=True)])
     if truncated:
         rpt += "- 注意：节点已截断到前 300 个最相关节点（仅影响展示，抽取未截断）。\n"
-    rpt += "- 类型计数（按颜色）: " + ", ".join([f"{k}:{v}" for k,v in type_cnt.items()]) + "\n\n"
-    rpt += "## 三元组\n"
-    for u, v, d in G.edges(data=True):
-        rpt += f"{u} --[{d.get('label','')}]--> {v}\n"
+    rpt += "## 高分关系（按风险/主体分排序）\n"
+    for it in scored[:200]:
+        rpt += f"[{it.get('_score',0)}] {it['head']} --[{it['relation']}]--> {it['tail']} ({it.get('direction','active')})\n"
 
     return G, rpt, truncated
 
 # --- 界面 ---
-st.title("DeepGraph Pro (Cloud Edition)")
+st.title("DeepGraph Pro · Cloud Edition")
 
 with st.sidebar:
     st.header("Settings")
@@ -286,7 +366,7 @@ with col1:
     files = st.file_uploader("Upload Files (PDF/DOCX/TXT)", accept_multiple_files=True)
     st.markdown("<br>", unsafe_allow_html=True)
     start = st.button("🚀 Start Analysis")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if st.session_state.processed:
         st.download_button("Download Graph HTML", st.session_state.graph_html, "graph.html", "text/html")
@@ -294,13 +374,18 @@ with col1:
 
 with col2:
     status = "Ready"
-    if start: status = "Running"
-    if st.session_state.processed: status = "Done"
+    if start:
+        status = "Running"
+    if st.session_state.processed:
+        status = "Done"
     st.markdown(
-        f"<div class='glass-card' style='padding:12px 16px; display:flex; gap:8px; align-items:center;'>"
-        f"<span style='padding:4px 10px; border-radius:999px; background:rgba(0,209,255,0.16); color:#00d1ff; font-weight:700;'>{status}</span>"
-        f"<span style='color:#cbd5e1;'>云端 SVO 图谱分析（全量抽取）</span>"
-        "</div>", unsafe_allow_html=True
+        f"""
+        <div class='glass-card' style='padding:12px 16px; display:flex; gap:10px; align-items:center;'>
+          <span style='padding:6px 12px; border-radius:999px; background:rgba(74,224,200,0.18); color:#4ae0c8; font-weight:800;'>{status}</span>
+          <span style='color:#cbd5e1;'>云端 SVO 图谱分析（敏感优先 · 高速模式）</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     if start:
@@ -310,16 +395,23 @@ with col2:
             with st.spinner("Analyzing on Cloud..."):
                 G, rpt, truncated = main_run(files, api_key, model_id)
                 if G:
-                    net = Network(height="700px", width="100%", bgcolor="#0f172a", font_color="#e5e7eb", directed=True)
+                    net = Network(
+                        height="720px",
+                        width="100%",
+                        bgcolor="#0c1224",
+                        font_color="#e6edf7",
+                        directed=True,
+                    )
                     net.from_nx(G)
                     st.session_state.graph_html = net.generate_html()
                     st.session_state.report_txt = rpt
                     st.session_state.processed = True
                     st.session_state.truncated = truncated
                     st.rerun()
-                elif rpt: st.error(rpt)
+                elif rpt:
+                    st.error(rpt)
 
     if st.session_state.processed:
         if st.session_state.truncated:
             st.warning("⚠️ 节点已截断至前 300 个最相关节点（仅影响展示，抽取未截断）")
-        st.components.v1.html(st.session_state.graph_html, height=700)
+        st.components.v1.html(st.session_state.graph_html, height=720)
