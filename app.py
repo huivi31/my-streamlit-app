@@ -460,26 +460,26 @@ with col2:
                         directed=True,
                     )
                     net.from_nx(G)
-                    # 改良物理引擎，避免挤在一起/抖动
+                    # 使用合法 JSON 的物理配置，避免 JSONDecodeError
                     net.set_options("""
-const options = {
-  physics: {
-    enabled: true,
-    solver: "forceAtlas2Based",
-    forceAtlas2Based: {
-      gravitationalConstant: -160,
-      centralGravity: 0.010,
-      springLength: 110,
-      springConstant: 0.11,
-      damping: 0.90,
-      avoidOverlap: 1.0
+{
+  "physics": {
+    "enabled": true,
+    "solver": "forceAtlas2Based",
+    "forceAtlas2Based": {
+      "gravitationalConstant": -160,
+      "centralGravity": 0.01,
+      "springLength": 110,
+      "springConstant": 0.11,
+      "damping": 0.9,
+      "avoidOverlap": 1.0
     },
-    stabilization: { enabled: true, iterations: 1500, updateInterval: 30 }
+    "stabilization": { "enabled": true, "iterations": 1500, "updateInterval": 30 }
   },
-  edges: { smooth: false },
-  layout: { improvedLayout: true },
-  interaction: { dragNodes: true, hover: true, navigationButtons: true }
-};
+  "edges": { "smooth": false },
+  "layout": { "improvedLayout": true },
+  "interaction": { "dragNodes": true, "hover": true, "navigationButtons": true }
+}
                     """)
                     st.session_state.graph_html = net.generate_html()
                     st.session_state.report_txt = rpt
