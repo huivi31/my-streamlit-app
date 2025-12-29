@@ -1,5 +1,5 @@
 import streamlit as st
-import os, json, time, concurrent.futures, io, tempfile, re, itertools
+import os, json, time, concurrent.futures, io, tempfile, re
 from collections import Counter
 import pypdf
 from docx import Document
@@ -236,19 +236,6 @@ def score_actor(name: str) -> int:
         return 1
     return 0
 
-def build_cooccur_edges(chunk_text: str, entities: list, min_freq=2):
-    co = Counter()
-    sentences = re.split(r"[。！？!?]\s*", chunk_text)
-    for sent in sentences:
-        present = set()
-        for e in entities:
-            for n in (e.get("head"), e.get("tail")):
-                if n and n in sent:
-                    present.add(n)
-        for u, v in itertools.combinations(sorted(present), 2):
-            co[frozenset({u, v})] += 1
-    return {pair: f for pair, f in co.items() if f >= min_freq}
-
 @st.cache_resource
 def get_client(api_key):
     return genai.Client(api_key=api_key)
@@ -281,14 +268,12 @@ def trim_graph(raw, max_nodes=300, min_nodes=50):
 # --- 核心流程 ---
 def main_run(files, api_key, model):
     chunks = []
-    chunk_texts = {}
     for f in files:
         txt = extract_text(f)
         if len(txt) > 100:
             for i, s in enumerate(split_text(txt)):
                 cid = f"{getattr(f,'name',str(f))}-{i}"
                 chunks.append((cid, s))
-                chunk_texts[cid] = s
 
     if not chunks:
         return None, "❌ 文件内容为空或读取失败", False
@@ -329,16 +314,10 @@ def main_run(files, api_key, model):
     scored = [it for it in scored if it["_score"] >= MIN_SCORE]
     scored.sort(key=lambda x: x.get("_score", 0), reverse=True)
 
-    # 共现虚边统计
-    co_counter = Counter()
-    for cid, ctext in chunk_texts.items():
-        co_map = build_cooccur_edges(ctext, scored, min_freq=2)
-        co_counter.update(co_map)
-
     # 节点裁剪仅影响展示，不影响抽取
     norm, truncated = trim_graph(scored, max_nodes=300, min_nodes=50)
 
-    # 构图
+    # 构图（仅真实抽取边）
     G = nx.DiGraph()
     for item in norm:
         h, t, r = item["head"], item["tail"], item["relation"]
@@ -359,24 +338,6 @@ def main_run(files, api_key, model):
             weight=3.0
         )
 
-    # 共现虚边（无向，灰色虚线，低权重）
-    for pair, freq in co_counter.items():
-        u, v = tuple(pair)
-        if not G.has_node(u):
-            G.add_node(u, label=u, color=COLORS.get("Unknown", "#94a3b8"), size=18)
-        if not G.has_node(v):
-            G.add_node(v, label=v, color=COLORS.get("Unknown", "#94a3b8"), size=18)
-        if not G.has_edge(u, v) and not G.has_edge(v, u):
-            G.add_edge(
-                u, v,
-                label=f"co-occur({freq})",
-                color="#6b7280",
-                smooth=True,
-                arrows="none",
-                dashes=True,
-                weight=0.4
-            )
-
     # 社区着色（可选）
     if HAS_LOUVAIN:
         undi = G.to_undirected()
@@ -393,7 +354,6 @@ def main_run(files, api_key, model):
     rpt += "## 高分关系（按风险/主体分排序，前 200 条）\n"
     for it in scored[:200]:
         rpt += f"[{it.get('_score',0)}] {it['head']} --[{it['relation']}]--> {it['tail']} ({it.get('direction','active')})\n"
-    rpt += f"\n## 共现虚边数: {len(co_counter)} (频次>=2)\n"
 
     return G, rpt, truncated
 
@@ -439,7 +399,7 @@ with col2:
         f"""
         <div class='glass-card' style='padding:12px 16px; display:flex; gap:10px; align-items:center;'>
           <span style='padding:6px 12px; border-radius:999px; background:rgba(74,224,200,0.18); color:#4ae0c8; font-weight:800;'>{status}</span>
-          <span style='color:#cbd5e1;'>云端 SVO 图谱分析（敏感优先 · 高速模式 + 共现联结）</span>
+          <span style='color:#cbd5e1;'>云端 SVO 图谱分析（敏感优先 · 高速模式）</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -460,7 +420,6 @@ with col2:
                         directed=True,
                     )
                     net.from_nx(G)
-                    # 使用合法 JSON 的物理配置，避免 JSONDecodeError
                     net.set_options("""
 {
   "physics": {
