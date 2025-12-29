@@ -319,7 +319,7 @@ def main_run(files, api_key, model):
             continue
         it["head"], it["tail"] = h, t
         it["direction"] = infer_direction(r, default=it.get("direction", "active"))
-        ev_score = score_event("", r)  # 这里未加 chunk 文本，可按需增强
+        ev_score = score_event("", r)  # 可按需加入 chunk_text
         act_score = max(score_actor(h), score_actor(t))
         total = ev_score + act_score
         it["_score"] = total
@@ -359,7 +359,7 @@ def main_run(files, api_key, model):
             weight=3.0
         )
 
-    # 共现虚边（无向，画成无箭头虚线，低权重）
+    # 共现虚边（无向，灰色虚线，低权重）
     for pair, freq in co_counter.items():
         u, v = tuple(pair)
         if not G.has_node(u):
@@ -453,13 +453,34 @@ with col2:
                 G, rpt, truncated = main_run(files, api_key, model_id)
                 if G:
                     net = Network(
-                        height="760px",
+                        height="820px",
                         width="100%",
                         bgcolor="#0c1224",
                         font_color="#e6edf7",
                         directed=True,
                     )
                     net.from_nx(G)
+                    # 改良物理引擎，避免挤在一起/抖动
+                    net.set_options("""
+const options = {
+  physics: {
+    enabled: true,
+    solver: "forceAtlas2Based",
+    forceAtlas2Based: {
+      gravitationalConstant: -160,
+      centralGravity: 0.010,
+      springLength: 110,
+      springConstant: 0.11,
+      damping: 0.90,
+      avoidOverlap: 1.0
+    },
+    stabilization: { enabled: true, iterations: 1500, updateInterval: 30 }
+  },
+  edges: { smooth: false },
+  layout: { improvedLayout: true },
+  interaction: { dragNodes: true, hover: true, navigationButtons: true }
+};
+                    """)
                     st.session_state.graph_html = net.generate_html()
                     st.session_state.report_txt = rpt
                     st.session_state.processed = True
@@ -471,4 +492,4 @@ with col2:
     if st.session_state.processed:
         if st.session_state.truncated:
             st.warning("⚠️ 节点已截断至前 300 个最相关节点（仅影响展示，抽取未截断）")
-        st.components.v1.html(st.session_state.graph_html, height=760)
+        st.components.v1.html(st.session_state.graph_html, height=820)
