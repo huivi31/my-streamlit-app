@@ -11,7 +11,7 @@
 
 <br>
 
-**DeepGraph Pro** 是一款基于 LLM 的可视化分析工具。它利用 Google Gemini 强大的上下文理解能力，从非结构化文档（PDF, DOCX, EPUB）中提取 **SVO（主谓宾）** 三元组，并构建交互式知识图谱，帮助用户快速洞察文本中的实体关系、风险网络和关键路径。
+**DeepGraph Pro** 是一款基于 LLM 的可视化分析工具。它从非结构化文档（PDF, DOCX, EPUB）中提取 **SVO（主谓宾）** 三元组，并构建交互式知识图谱，帮助用户快速洞察文本中的实体关系、风险网络和关键路径。
 
 [查看演示 Demo](https://deepgraph-huivi.streamlit.app) · [报告 Bug](https://github.com/huivi31/my-streamlit-app/issues) · [请求功能](https://github.com/huivi31/my-streamlit-app/issues)
 
