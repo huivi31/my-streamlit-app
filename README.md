@@ -2,7 +2,7 @@
 
 # 🕸️ DeepGraph Pro
 ### AI-Powered Knowledge Graph Generator
-### 基于 Gemini 的智能文档知识图谱生成器
+### 智能文档知识图谱生成器
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://deepgraph-huivi.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
