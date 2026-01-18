@@ -1,5 +1,5 @@
 import streamlit as st
-import os, json, time, concurrent.futures, io, tempfile, re
+import os, json, concurrent.futures, io, tempfile, re
 from collections import Counter
 import pypdf
 from docx import Document
@@ -10,170 +10,114 @@ from google import genai
 from pyvis.network import Network
 import networkx as nx
 
-# 社区检测
 try:
     import community as community_louvain
     HAS_LOUVAIN = True
-except Exception:
+except:
     HAS_LOUVAIN = False
 
-# --- 页面配置 ---
-st.set_page_config(
-    page_title="DeepGraph Pro v3 - Graph RAG 知识库构建",
-    layout="wide",
-    page_icon="🔍",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="DeepGraph Pro", layout="wide", page_icon="�️")
 
-# --- UI样式 ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-:root { --bg1:#0c1224; --bg2:#0f1b2f; --card:rgba(255,255,255,0.08); --border:rgba(255,255,255,0.16); --primary:#4ae0c8; }
-.stApp { background: linear-gradient(145deg, var(--bg1), var(--bg2)); color:#e6edf7; font-family:'Inter',sans-serif; }
-.glass-card { background:var(--card); border:1px solid var(--border); backdrop-filter:blur(20px); border-radius:18px; padding:18px; }
-.stButton > button { background:linear-gradient(120deg, #4ae0c8, #7c6bff); color:#fff; border:none; border-radius:12px; height:44px; font-weight:700; }
-.stTextInput > div > div > input { background:rgba(255,255,255,0.06) !important; border:1px solid var(--border) !important; border-radius:12px !important; color:#e5e7eb !important; }
+.stApp { background: linear-gradient(145deg, #0c1224, #0f1b2f); color: #e6edf7; }
+.stButton > button { background: linear-gradient(120deg, #4ae0c8, #7c6bff); color: #fff; border: none; border-radius: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 状态管理 ---
-for key in ["processed", "graph_html", "report_txt", "triples_json", "stats"]:
-    if key not in st.session_state:
-        st.session_state[key] = "" if key in ["graph_html", "report_txt", "triples_json"] else ({} if key == "stats" else False)
+if "processed" not in st.session_state:
+    st.session_state.processed = False
+if "graph_html" not in st.session_state:
+    st.session_state.graph_html = ""
+if "report" not in st.session_state:
+    st.session_state.report = ""
+if "triples" not in st.session_state:
+    st.session_state.triples = []
 
-# --- 配置 ---
-MAX_WORKERS = 10
-CHUNK_LEN = 3500
-
-# ============================================
-# 敏感维度定义 - 用于分类标签
-# ============================================
-
-DIMENSIONS = {
-    "history_nihilism": {
-        "name": "历史虚无",
-        "color": "#ff4444",
-        "desc": "否定党史国史、抹黑英烈、美化侵略者/反动派、歪曲重大历史事件"
-    },
-    "political_attack": {
-        "name": "政治攻击",
-        "color": "#ff6600",
-        "desc": "攻击诋毁党和国家领导人、攻击中国特色社会主义制度、攻击党的路线方针政策"
-    },
-    "separatism": {
-        "name": "分裂主义",
-        "color": "#ff0066",
-        "desc": "台独、港独、藏独、疆独、破坏国家统一、损害国家主权领土完整"
-    },
-    "subversion": {
-        "name": "颠覆煽动",
-        "color": "#cc0000",
-        "desc": "煽动颠覆国家政权、推翻社会主义制度、颜色革命、境外势力渗透"
-    },
-    "sensitive_event": {
-        "name": "敏感事件",
-        "color": "#aa44ff",
-        "desc": "六四、法轮功、重大群体事件、维稳敏感节点"
-    },
-    "opinion_guidance": {
-        "name": "舆论导向",
-        "color": "#ffaa00",
-        "desc": "歪曲党和政府形象、煽动社会对立、制造传播政治谣言、恶意炒作敏感话题"
-    },
-    "ideology_infiltration": {
-        "name": "意识形态",
-        "color": "#ff66aa",
-        "desc": "宣扬西方价值观、普世价值、宪政民主、新闻自由等错误思潮"
-    },
-    "religion_extremism": {
-        "name": "宗教极端",
-        "color": "#996633",
-        "desc": "宗教极端主义、邪教、非法传教、利用宗教进行渗透"
-    }
-}
-
-# 节点类型颜色
-TYPE_COLORS = {
-    "Person": "#7c9dff",
-    "Org": "#4ae0c8", 
-    "Event": "#c084fc",
-    "Policy": "#22c55e",
-    "Concept": "#f59e0b",
-    "Place": "#06b6d4",
-    "Unknown": "#94a3b8"
-}
+MAX_WORKERS = 8
+CHUNK_SIZE = 4000
 
 # ============================================
-# Prompt - 专注敏感内容抽取
+# Prompt - 核心逻辑
 # ============================================
 
-EXTRACT_PROMPT = """
-你是中国互联网内容审核知识库构建专家，负责从材料中提取敏感内容的结构化知识三元组。
+PROMPT = """
+你是时政历史文档分析专家，负责从文本中提取结构化知识三元组，用于构建内容审核知识库。
 
 【你的任务】
-从文本中识别并提取与以下敏感维度相关的内容：
+从文本中识别并提取所有与时政、历史、政治相关的信息，构建知识图谱。
 
-1. history_nihilism (历史虚无): 否定党史国史、抹黑英烈、美化侵略/反动、歪曲历史
-2. political_attack (政治攻击): 攻击领导人、攻击制度、攻击政策
-3. separatism (分裂主义): 台独港独藏独疆独、破坏统一
-4. subversion (颠覆煽动): 颠覆政权、颜色革命、境外渗透
-5. sensitive_event (敏感事件): 六四、法轮功、群体事件、维稳节点
-6. opinion_guidance (舆论导向): 歪曲形象、煽动对立、政治谣言
-7. ideology_infiltration (意识形态): 普世价值、宪政民主、西方价值观
-8. religion_extremism (宗教极端): 邪教、宗教极端、非法传教
-
-【提取规则】
-1. 每个敏感观点/表述/事件提取为一个三元组
-2. head: 表述主体（谁说的/谁做的/什么书/什么文章）
-3. relation: 具体的表述/观点/行为（保留关键细节，不要泛化）
-4. tail: 表述对象（针对谁/什么事件/什么政策）
-5. dimension: 敏感维度代码
-6. risk: high(明确违规)/medium(有争议)/low(需关注)
-7. type_head/type_tail: Person/Org/Event/Policy/Concept/Place
-
-【重点关注】
-- 对历史事件的评价和态度
-- 对领导人/党/政府的评价
-- 涉及敏感历史节点的表述
-- 隐晦的批评、讽刺、暗示
-- 与官方口径不一致的叙述
+【必须提取的内容类型】
+1. 人物关系：谁和谁是什么关系、谁对谁做了什么
+2. 事件描述：什么事件、谁参与、什么时间、什么结果
+3. 观点立场：谁持有什么观点、对什么事件/人物的评价
+4. 政策制度：什么政策、谁制定、影响什么
+5. 组织关系：组织架构、隶属关系、对立关系
+6. 历史评价：对历史事件/人物的定性、评价、争议
 
 【不要提取】
-- 纯粹的客观事实陈述（无立场无评价）
-- 与敏感维度完全无关的内容
+- 日常生活琐事（吃饭睡觉、天气描写、风景描写）
+- 与时政历史完全无关的内容
 
-【文本】
+【分类标签 dimension】
+- history: 历史事件、历史人物、历史评价、历史定性
+- politics: 政治人物、政治事件、政策制度、权力关系
+- ideology: 思想观点、意识形态、价值取向、理论主张
+- sensitive: 敏感话题、争议内容、禁忌表述、红线内容
+- military: 军事行动、军事人物、国防政策
+- diplomacy: 外交关系、国际事件、领土争议
+- economy_policy: 经济政策、经济改革、产业政策
+- society: 社会事件、群体事件、社会运动、民生政策
+
+【输出要求】
+每个三元组必须包含:
+- head: 主体（具体的人名/组织名/书名/概念，不要用代词）
+- relation: 关系描述（具体的动作/观点/评价，保留原文关键词）
+- tail: 客体（具体名称）
+- dimension: 上述分类标签之一
+- detail: 补充细节（时间/地点/背景/来源，如有）
+
+【特别注意】
+- 人名要用全名，不要用"他""她"等代词
+- relation要具体，不要用"相关""有关"等模糊词
+- 尽可能多地提取，每个重要信息点都要有三元组
+- 敏感内容尤其要完整提取，不要遗漏
+
+【待分析文本】
 {text}
 
 【输出】
-返回 JSON 数组，每个元素：
-{{"head": "", "relation": "", "tail": "", "dimension": "", "risk": "", "type_head": "", "type_tail": ""}}
+返回JSON数组。尽可能完整提取，有多少信息就输出多少三元组。
 """
 
+
 # ============================================
-# 辅助函数
+# 工具函数
 # ============================================
 
-def smart_split(text, max_len=CHUNK_LEN):
+def split_text(text, size=CHUNK_SIZE):
     paragraphs = re.split(r'\n\s*\n', text)
     chunks, current = [], ""
     for p in paragraphs:
         p = p.strip()
-        if not p: continue
-        if len(current) + len(p) < max_len:
+        if not p:
+            continue
+        if len(current) + len(p) < size:
             current += "\n\n" + p if current else p
         else:
-            if current: chunks.append(current.strip())
-            current = p if len(p) <= max_len else p[:max_len]
-    if current: chunks.append(current.strip())
-    return chunks or [text[:max_len]]
+            if current:
+                chunks.append(current)
+            current = p
+    if current:
+        chunks.append(current)
+    return chunks or [text[:size]]
 
-def extract_text(file_obj):
-    name = getattr(file_obj, "name", "")
+def read_file(f):
+    name = getattr(f, "name", "")
     ext = name.lower().rsplit(".", 1)[-1] if "." in name else ""
-    data = file_obj.read() if hasattr(file_obj, "read") else open(file_obj, "rb").read()
-    if hasattr(file_obj, "seek"): file_obj.seek(0)
+    data = f.read()
+    if hasattr(f, "seek"):
+        f.seek(0)
     
     text = ""
     try:
@@ -182,250 +126,215 @@ def extract_text(file_obj):
                 text += (page.extract_text() or "") + "\n"
         elif ext == "epub":
             with tempfile.NamedTemporaryFile(delete=False, suffix=".epub") as tmp:
-                tmp.write(data); tmp_path = tmp.name
+                tmp.write(data)
+                path = tmp.name
             try:
-                for item in epub.read_epub(tmp_path).get_items_of_type(ebooklib.ITEM_DOCUMENT):
+                book = epub.read_epub(path)
+                for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
                     text += BeautifulSoup(item.get_content(), "html.parser").get_text() + "\n"
-            finally: os.remove(tmp_path)
+            finally:
+                os.remove(path)
         elif ext in ["docx", "doc"]:
             text = "\n".join(p.text for p in Document(io.BytesIO(data)).paragraphs)
         else:
             text = data.decode("utf-8", errors="ignore")
     except Exception as e:
-        print(f"[extract] {e}")
+        st.error(f"读取失败: {e}")
     return text
 
 @st.cache_resource
-def get_client(api_key):
-    return genai.Client(api_key=api_key)
+def get_client(key):
+    return genai.Client(api_key=key)
 
-def extract_triples(chunk_data, client, model):
-    i, text = chunk_data
+def extract(chunk, client, model):
     try:
-        resp = client.models.generate_content(model=model, contents=EXTRACT_PROMPT.format(text=text))
+        resp = client.models.generate_content(model=model, contents=PROMPT.format(text=chunk))
         raw = resp.text.replace("```json", "").replace("```", "").strip()
         start, end = raw.find("["), raw.rfind("]") + 1
-        if start != -1 and end > start:
-            triples = json.loads(raw[start:end])
-            for t in triples:
-                t["_chunk"] = i
-            return triples
+        if start >= 0 and end > start:
+            return json.loads(raw[start:end])
     except Exception as e:
-        print(f"[chunk {i}] {e}")
+        print(f"Error: {e}")
     return []
 
-def merge_entities(triples):
+def merge_similar(triples):
     """合并相似实体"""
-    count = Counter()
+    entities = Counter()
     for t in triples:
-        for key in ["head", "tail"]:
-            if t.get(key): count[t[key].strip()] += 1
+        for k in ["head", "tail"]:
+            if t.get(k):
+                entities[t[k].strip()] += 1
     
-    # 简单合并：子串关系
     merge_map = {}
-    entities = list(count.keys())
-    for e1 in entities:
-        for e2 in entities:
-            if e1 != e2 and len(e1) < len(e2) and e1 in e2 and count[e2] >= count[e1]:
-                merge_map[e1] = e2
+    names = list(entities.keys())
+    for a in names:
+        for b in names:
+            if a != b and len(a) < len(b) and a in b:
+                merge_map[a] = b
     
     for t in triples:
-        for key in ["head", "tail"]:
-            if t.get(key) in merge_map:
-                t[key] = merge_map[t[key]]
+        for k in ["head", "tail"]:
+            if t.get(k) in merge_map:
+                t[k] = merge_map[t[k]]
     return triples
 
 def build_graph(triples):
     G = nx.DiGraph()
     
-    # 统计节点风险
-    node_risk = {}
-    for t in triples:
-        risk = t.get("risk", "low")
-        for key in ["head", "tail"]:
-            entity = t.get(key, "").strip()
-            if entity:
-                if entity not in node_risk or risk == "high" or (risk == "medium" and node_risk[entity] == "low"):
-                    node_risk[entity] = risk
+    dim_colors = {
+        "history": "#c084fc",
+        "politics": "#ff6b6b",
+        "ideology": "#f59e0b",
+        "sensitive": "#ff4444",
+        "military": "#22c55e",
+        "diplomacy": "#06b6d4",
+        "economy_policy": "#4ae0c8",
+        "society": "#7c9dff",
+    }
     
     for t in triples:
-        head, tail = t.get("head", "").strip(), t.get("tail", "").strip()
-        if not head or not tail: continue
+        h, r, tl = t.get("head", "").strip(), t.get("relation", ""), t.get("tail", "").strip()
+        if not h or not tl:
+            continue
         
         dim = t.get("dimension", "")
-        dim_info = DIMENSIONS.get(dim, {})
-        risk = t.get("risk", "low")
+        color = dim_colors.get(dim, "#94a3b8")
+        detail = t.get("detail", "")
         
-        # 节点颜色：高危用维度颜色，否则用类型颜色
-        head_risk, tail_risk = node_risk.get(head, "low"), node_risk.get(tail, "low")
-        head_color = dim_info.get("color", TYPE_COLORS.get(t.get("type_head", "Unknown"), "#94a3b8")) if head_risk == "high" else TYPE_COLORS.get(t.get("type_head", "Unknown"), "#94a3b8")
-        tail_color = dim_info.get("color", TYPE_COLORS.get(t.get("type_tail", "Unknown"), "#94a3b8")) if tail_risk == "high" else TYPE_COLORS.get(t.get("type_tail", "Unknown"), "#94a3b8")
+        G.add_node(h, label=h, color=color, size=20)
+        G.add_node(tl, label=tl, color=color, size=20)
         
-        # 节点大小
-        size_map = {"high": 28, "medium": 22, "low": 16}
+        label = r if len(r) <= 20 else r[:18] + ".."
+        title = r
+        if detail:
+            title += f"\n{detail}"
         
-        G.add_node(head, label=head, color=head_color, size=size_map[head_risk], 
-                   title=f"类型: {t.get('type_head', 'Unknown')}\n风险: {head_risk}")
-        G.add_node(tail, label=tail, color=tail_color, size=size_map[tail_risk],
-                   title=f"类型: {t.get('type_tail', 'Unknown')}\n风险: {tail_risk}")
-        
-        # 边
-        rel = t.get("relation", "")
-        label = rel if len(rel) <= 20 else rel[:17] + "..."
-        edge_color = dim_info.get("color", "#7f8ea3") if risk in ["high", "medium"] else "#7f8ea3"
-        
-        G.add_edge(head, tail, label=label, color=edge_color, arrows="to",
-                   title=f"{rel}\n维度: {dim_info.get('name', dim)}\n风险: {risk}")
+        G.add_edge(h, tl, label=label, color=color, arrows="to", title=title)
     
     return G
-
-def generate_report(triples, G):
-    rpt = "# Graph RAG 知识库三元组报告\n\n"
-    
-    # 统计
-    dim_count = Counter(t.get("dimension", "unknown") for t in triples)
-    risk_count = Counter(t.get("risk", "low") for t in triples)
-    
-    rpt += "## 统计\n\n"
-    rpt += f"- 三元组总数: {len(triples)}\n"
-    rpt += f"- 节点数: {len(G.nodes())}\n"
-    rpt += f"- 🔴 高危: {risk_count.get('high', 0)}\n"
-    rpt += f"- 🟠 中危: {risk_count.get('medium', 0)}\n"
-    rpt += f"- 🟢 低危: {risk_count.get('low', 0)}\n\n"
-    
-    rpt += "## 维度分布\n\n"
-    for dim, info in DIMENSIONS.items():
-        if dim_count.get(dim, 0) > 0:
-            rpt += f"- {info['name']}: {dim_count[dim]}\n"
-    rpt += "\n"
-    
-    # 按维度分组输出
-    for dim, info in DIMENSIONS.items():
-        dim_triples = [t for t in triples if t.get("dimension") == dim]
-        if dim_triples:
-            rpt += f"## {info['name']}\n\n"
-            for t in dim_triples:
-                risk_icon = {"high": "🔴", "medium": "🟠", "low": "🟢"}.get(t.get("risk", "low"), "⚪")
-                rpt += f"{risk_icon} **{t.get('head')}** → {t.get('relation')} → **{t.get('tail')}**\n"
-            rpt += "\n"
-    
-    return rpt
 
 # ============================================
 # 主流程
 # ============================================
 
-def main_run(files, api_key, model):
+def run(files, api_key, model):
     client = get_client(api_key)
     
+    # 读取所有文件
     all_text = ""
     for f in files:
-        txt = extract_text(f)
-        if len(txt) > 100: all_text += txt + "\n\n"
+        all_text += read_file(f) + "\n\n"
     
-    if not all_text:
-        return None, "❌ 文件为空", [], {}
+    if len(all_text.strip()) < 100:
+        return None, "文件内容过少", []
     
-    chunks = [(i, c) for i, c in enumerate(smart_split(all_text)) if len(c) > 50]
-    if not chunks:
-        return None, "❌ 内容过短", [], {}
+    # 分块
+    chunks = split_text(all_text)
+    st.info(f"共 {len(chunks)} 个文本块")
     
-    st.info(f"📊 分析 {len(chunks)} 个文本块...")
+    # 并行抽取
     bar = st.progress(0)
     all_triples = []
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as exe:
-        futures = [exe.submit(extract_triples, c, client, model) for c in chunks]
-        for i, f in enumerate(concurrent.futures.as_completed(futures)):
-            if result := f.result():
+        futures = {exe.submit(extract, c, client, model): i for i, c in enumerate(chunks)}
+        done = 0
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result:
                 all_triples.extend(result)
-            bar.progress((i + 1) / len(chunks))
+            done += 1
+            bar.progress(done / len(chunks))
     
     if not all_triples:
-        return None, "❌ 未提取到三元组", [], {}
+        return None, "未抽取到内容", []
     
-    st.success(f"✅ 提取 {len(all_triples)} 个三元组")
+    # 合并相似实体
+    all_triples = merge_similar(all_triples)
     
-    all_triples = merge_entities(all_triples)
+    # 构建图谱
     G = build_graph(all_triples)
-    report = generate_report(all_triples, G)
     
-    stats = {
-        "total": len(all_triples),
-        "nodes": len(G.nodes()),
-        "high": sum(1 for t in all_triples if t.get("risk") == "high"),
-        "medium": sum(1 for t in all_triples if t.get("risk") == "medium"),
-        "dimensions": {dim: sum(1 for t in all_triples if t.get("dimension") == dim) for dim in DIMENSIONS}
-    }
+    # 生成报告
+    report = f"# 抽取报告\n\n"
+    report += f"- 三元组数量: {len(all_triples)}\n"
+    report += f"- 节点数量: {len(G.nodes())}\n\n"
     
-    return G, report, all_triples, stats
+    # 按维度分组
+    by_dim = {}
+    for t in all_triples:
+        dim = t.get("dimension", "other")
+        if dim not in by_dim:
+            by_dim[dim] = []
+        by_dim[dim].append(t)
+    
+    for dim, items in by_dim.items():
+        report += f"## {dim} ({len(items)})\n\n"
+        for t in items:
+            detail = f" [{t.get('detail')}]" if t.get("detail") else ""
+            report += f"- {t.get('head')} → {t.get('relation')} → {t.get('tail')}{detail}\n"
+        report += "\n"
+    
+    return G, report, all_triples
 
 # ============================================
 # 界面
 # ============================================
 
-st.title("🔍 DeepGraph Pro v3")
-st.markdown("**Graph RAG 知识库构建** - 敏感内容三元组抽取")
+st.title("�️ DeepGraph Pro")
+st.caption("时政历史知识图谱构建")
 
 with st.sidebar:
-    st.header("⚙️ 配置")
-    api_key = st.text_input("Google API Key", type="password")
-    model_id = st.text_input("Model ID", value="gemini-2.0-flash-exp")
-    
-    st.markdown("---")
-    st.markdown("### 敏感维度")
-    for dim, info in DIMENSIONS.items():
-        st.markdown(f"<span style='color:{info['color']}'>●</span> {info['name']}", unsafe_allow_html=True)
+    api_key = st.text_input("API Key", type="password")
+    model = st.text_input("Model", value="gemini-2.0-flash-exp")
 
-col1, col2 = st.columns([1, 2.2])
+col1, col2 = st.columns([1, 3])
 
 with col1:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    files = st.file_uploader("上传材料", accept_multiple_files=True)
-    start = st.button("🚀 开始构建")
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    if st.session_state.processed:
-        # 导出三元组 JSON
-        st.download_button("📥 导出三元组 JSON", st.session_state.triples_json, "triples.json", "application/json")
-        st.download_button("📥 导出图谱 HTML", st.session_state.graph_html, "graph.html", "text/html")
-        st.download_button("📥 导出报告", st.session_state.report_txt, "report.md", "text/markdown")
-        
-        stats = st.session_state.stats
-        st.metric("三元组", stats.get("total", 0))
-        cols = st.columns(2)
-        cols[0].metric("🔴 高危", stats.get("high", 0))
-        cols[1].metric("🟠 中危", stats.get("medium", 0))
-
-with col2:
-    if start:
-        if not api_key or not files:
-            st.error("请填入 API Key 并上传文件")
-        else:
-            with st.spinner("构建知识库..."):
-                G, report, triples, stats = main_run(files, api_key, model_id)
-                if G and len(G.nodes()) > 0:
+    files = st.file_uploader("上传文件", accept_multiple_files=True)
+    if st.button("开始抽取"):
+        if api_key and files:
+            with st.spinner("处理中..."):
+                G, report, triples = run(files, api_key, model)
+                if G:
                     net = Network(height="750px", width="100%", bgcolor="#0c1224", font_color="#e6edf7", directed=True)
                     net.from_nx(G)
-                    net.set_options('{"physics": {"solver": "forceAtlas2Based", "forceAtlas2Based": {"gravitationalConstant": -60, "springLength": 100}}, "interaction": {"hover": true}}')
-                    
+                    net.set_options('''
+{
+  "physics": {
+    "enabled": true,
+    "solver": "forceAtlas2Based",
+    "forceAtlas2Based": {
+      "gravitationalConstant": -100,
+      "centralGravity": 0.01,
+      "springLength": 150,
+      "springConstant": 0.05,
+      "damping": 0.8,
+      "avoidOverlap": 0.9
+    },
+    "stabilization": {"enabled": true, "iterations": 500}
+  },
+  "edges": {"smooth": {"type": "continuous"}},
+  "interaction": {"hover": true, "navigationButtons": true, "keyboard": true}
+}
+                    ''')
                     st.session_state.graph_html = net.generate_html()
-                    st.session_state.report_txt = report
-                    st.session_state.triples_json = json.dumps(triples, ensure_ascii=False, indent=2)
-                    st.session_state.stats = stats
+                    st.session_state.report = report
+                    st.session_state.triples = triples
                     st.session_state.processed = True
                     st.rerun()
+                else:
+                    st.error(report)
+        else:
+            st.warning("请填写API Key并上传文件")
     
     if st.session_state.processed:
-        # 维度分布
-        stats = st.session_state.stats
-        st.markdown("### 维度分布")
-        for dim, info in DIMENSIONS.items():
-            count = stats.get("dimensions", {}).get(dim, 0)
-            if count > 0:
-                st.markdown(f"<span style='color:{info['color']}'>●</span> {info['name']}: {count}", unsafe_allow_html=True)
-        
-        st.components.v1.html(st.session_state.graph_html, height=750)
-        
-        with st.expander("📋 报告"):
-            st.markdown(st.session_state.report_txt)
+        st.metric("三元组", len(st.session_state.triples))
+        st.download_button("下载JSON", json.dumps(st.session_state.triples, ensure_ascii=False, indent=2), "triples.json")
+        st.download_button("下载报告", st.session_state.report, "report.md")
+
+with col2:
+    if st.session_state.processed:
+        st.components.v1.html(st.session_state.graph_html, height=700)
+
+
