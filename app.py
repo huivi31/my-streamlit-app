@@ -212,9 +212,17 @@ def call_llm(client, model, prompt):
     try:
         resp = client.models.generate_content(model=model, contents=prompt)
         raw = resp.text.replace("```json", "").replace("```", "").strip()
+        
+        # 调试：打印LLM原始返回
+        print(f"[DEBUG] LLM原始返回 (前200字符): {raw[:200]}")
+        
         start, end = raw.find("["), raw.rfind("]") + 1
         if start >= 0 and end > start:
-            return json.loads(raw[start:end])
+            result = json.loads(raw[start:end])
+            print(f"[DEBUG] 解析成功，获得 {len(result)} 条记录")
+            return result
+        else:
+            print(f"[DEBUG] 未找到JSON数组")
     except Exception as e:
         print(f"LLM Error: {e}")
     return []
@@ -227,12 +235,21 @@ def extract_entities(chunk, client, model):
     """阶段一：抽取实体"""
     prompt = ENTITY_PROMPT.format(text=chunk)
     entities = call_llm(client, model, prompt)
-    # 过滤无效实体
+    
+    # 调试：打印LLM返回的原始数据
+    if entities:
+        print(f"[DEBUG] LLM返回 {len(entities)} 个实体")
+    
+    # 过滤无效实体（放宽验证）
     valid = []
     for e in entities:
         name = e.get("name", "").strip()
-        etype = e.get("type", "")
-        if len(name) >= 2 and etype in ENTITY_TYPES:
+        etype = e.get("type", "").strip()
+        # 只要name长度>=2就保留，type可以为空
+        if len(name) >= 2:
+            # 如果type不在预定义列表中，设为"Other"
+            if etype not in ENTITY_TYPES:
+                etype = "Other"
             valid.append({"name": name, "type": etype})
     return valid
 
