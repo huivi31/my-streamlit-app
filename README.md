@@ -1,10 +1,10 @@
-# 🕸️ DeepGraph Pro v2
+# 📖 解书客
 
-### 智能文档知识图谱生成器 - 多模板版
+### 雪山千古冷，独照峨眉峰。
 
-DeepGraph Pro v2 是基于 LLM 的可视化分析工具，**支持自动识别文档类型并选择最优抽取策略**。
+**解书客** 是基于 LLM 的智能文献解析与知识图谱生成工具，支持自动识别文档类型并选择最优抽取策略。
 
-## ✨ v2 新特性
+## ✨ 核心特性
 
 | 特性 | 说明 |
 |------|------|
@@ -12,6 +12,8 @@ DeepGraph Pro v2 是基于 LLM 的可视化分析工具，**支持自动识别�
 | 📝 **动态模板** | 每种类型使用专门设计的 Prompt 模板 |
 | 📄 **语义分块** | 按段落边界分块，保持语义完整性 |
 | 🔗 **实体消歧** | LLM 自动识别并合并同一实体的不同表述 |
+| 🎨 **海水配色** | Ocean Teal 渐变主题，护眼舒适 |
+| 📜 **公文字体** | 仿宋正文、楷体引用、标题用小标宋 |
 
 ## 🚀 快速开始
 
@@ -53,9 +55,9 @@ streamlit run app.py
 - DOCX
 - TXT
 
-## ☁️ 部署
+## ☁️ 在线体验
 
-本项目已针对 Streamlit Community Cloud 优化，fork 后可直接部署。
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/huivi31/my-streamlit-app/main/app.py)
 
 ## 📄 开源协议
 
