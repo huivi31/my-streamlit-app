@@ -17,45 +17,52 @@ import networkx as nx
 st.set_page_config(page_title="解书客", layout="wide", page_icon="📖", initial_sidebar_state="collapsed")
 
 # ============================================
-# Minimal Luxury - Ocean Teal Gradient + Wave Effects
+# 党史文献研究院风格 - 中国红 + 庄重严肃
 # ============================================
 st.markdown("""
 <style>
-    /* 中国公文字体：标题用方正小标宋/黑体，正文用仿宋，楷体用于引用，隶书用于品牌 */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+QingKe+HuangYou&family=Long+Cang&display=swap');
+    /* 公文字体 */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
     
     :root {
-        --bg-body: #fafaf9;
+        /* 中国红配色 */
+        --china-red: #C41E3A;
+        --china-red-dark: #A01830;
+        --china-red-light: #E8384F;
+        --china-red-bg: rgba(196, 30, 58, 0.08);
+        --gold: #D4AF37;
+        --gold-light: #F5E6C4;
+        
+        /* 背景色 */
+        --bg-body: #ffffff;
         --bg-card: #ffffff;
-        --bg-subtle: #f5f5f4;
-        --bg-muted: #e7e5e4;
-        --text-primary: #1c1917;
-        --text-secondary: #57534e;
-        --text-muted: #a8a29e;
-        /* Ocean Teal Gradient - 清澈海水色 */
-        --ocean-light: #7dd3c0;
-        --ocean-mid: #4db6ac;
-        --ocean-deep: #2a9d8f;
-        --ocean-gradient: linear-gradient(135deg, #7dd3c0 0%, #4db6ac 50%, #2a9d8f 100%);
-        --ocean-glow: rgba(77, 182, 172, 0.35);
-        --accent: #3ba99c;
-        --accent-light: rgba(59, 169, 156, 0.1);
-        --accent-hover: #2a9d8f;
-        --border: #e7e5e4;
-        --border-hover: #d6d3d1;
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
-        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
-        --shadow-ocean: 0 4px 20px rgba(77, 182, 172, 0.25);
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 20px;
+        --bg-subtle: #fafafa;
+        --bg-header: var(--china-red);
+        
+        /* 文字色 */
+        --text-primary: #1a1a1a;
+        --text-secondary: #4a4a4a;
+        --text-muted: #7a7a7a;
+        --text-light: #ffffff;
+        
+        /* 边框 */
+        --border: #e5e5e5;
+        --border-red: var(--china-red);
+        
+        /* 阴影 */
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+        --shadow-red: 0 4px 16px rgba(196, 30, 58, 0.2);
+        
+        /* 圆角 - 党政风格用较小圆角 */
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 8px;
+        
         /* 公文字体 */
-        --font-title: "FZXiaoBiaoSong-B05", "方正小标宋", "Noto Serif SC", "SimSun", "宋体", serif;
-        --font-body: "FZFangSong-Z02", "仿宋", "FangSong", "STFangsong", "Noto Serif SC", serif;
-        --font-quote: "FZKai-Z03", "楷体", "KaiTi", "STKaiti", "Noto Serif SC", serif;
-        --font-ui: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", sans-serif;
+        --font-title: "Noto Serif SC", "SimSun", "宋体", serif;
+        --font-body: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", sans-serif;
+        --font-quote: "KaiTi", "楷体", "STKaiti", serif;
     }
     
     .stApp {
@@ -65,217 +72,174 @@ st.markdown("""
     #MainMenu, footer, header {visibility: hidden; height: 0;}
     .stDeployButton, [data-testid="stToolbar"], [data-testid="stDecoration"] {display: none;}
     
-    /* 公文字体规则 - 加粗阅读友好 */
+    /* 全局字体 */
     * {
         font-family: var(--font-body);
-        font-weight: 500;
+        font-weight: 400;
         -webkit-font-smoothing: antialiased;
-        line-height: 1.75;
+        line-height: 1.8;
     }
     
-    /* UI元素用无衬线字体 */
-    button, input, select, textarea, 
-    .stButton, .stTextInput, .stSelectbox,
-    [data-testid="stExpander"] summary {
-        font-family: var(--font-ui) !important;
-        font-weight: 500 !important;
-    }
-    
-    [data-testid="stExpander"] summary svg,
-    .stExpander svg {
-        font-family: inherit !important;
-    }
-    
-    /* 标题用小标宋/黑体风格 - 加粗 */
+    /* 标题用宋体 */
     h1, h2, h3 {
         font-family: var(--font-title) !important;
         font-weight: 600 !important;
-        letter-spacing: 0.05em !important;
         color: var(--text-primary) !important;
+        letter-spacing: 0.02em !important;
     }
     
-    h1 {
-        font-size: 28px !important;
-    }
+    h1 { font-size: 26px !important; }
+    h2 { font-size: 22px !important; }
+    h3 { font-size: 18px !important; }
     
-    /* 正文用仿宋 */
+    /* 正文 */
     p, span, label, div {
         font-family: var(--font-body);
         color: var(--text-secondary);
     }
     
-    /* 引用和注释用楷体 */
-    blockquote, .quote, .event-desc, .event-meta {
-        font-family: var(--font-quote) !important;
-        font-style: normal;
-    }
-    
-    /* Clean Nav */
-    .apple-nav {
+    /* ========== 顶部导航栏 - 中国红 ========== */
+    .dang-nav {
         position: fixed;
         top: 0; left: 0; right: 0;
-        height: 56px;
-        background: rgba(250, 250, 249, 0.9);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        height: 60px;
+        background: var(--china-red);
         z-index: 99999;
-        border-bottom: 1px solid var(--border);
         display: flex;
         justify-content: center;
         align-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     
     .nav-content {
         width: 100%;
-        max-width: 1100px;
+        max-width: 1200px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 32px;
+        padding: 0 40px;
+    }
+    
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .nav-logo {
+        width: 36px;
+        height: 36px;
+        background: var(--gold);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
     }
     
     .nav-title {
-        font-size: 16px;
+        font-family: var(--font-title);
+        font-size: 22px;
         font-weight: 600;
-        color: var(--text-primary);
-        letter-spacing: -0.01em;
+        color: var(--text-light);
+        letter-spacing: 0.15em;
     }
     
-    /* Hero */
+    .nav-subtitle {
+        font-size: 12px;
+        color: rgba(255,255,255,0.8);
+        letter-spacing: 0.3em;
+        margin-top: 2px;
+    }
+    
+    /* ========== Hero 区域 ========== */
     .hero {
         text-align: center;
-        padding: 100px 24px 60px;
+        padding: 100px 24px 50px;
+        background: linear-gradient(180deg, var(--china-red-bg) 0%, var(--bg-body) 100%);
     }
     
-    .hero-tag {
+    .hero-badge {
         display: inline-block;
-        color: var(--accent);
-        font-weight: 600;
-        font-size: 12px;
-        margin-bottom: 16px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        padding: 6px 12px;
-        background: var(--accent-light);
-        border-radius: 6px;
+        background: var(--china-red);
+        color: white;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        margin-bottom: 20px;
     }
     
-    /* 隶书风格用于品牌标题 - Google Fonts */
-    .hero h1, .lishu-font {
-        font-family: 'Long Cang', 'ZCOOL QingKe HuangYou', "隶书", "LiSu", "STLiti", serif !important;
-        font-size: 58px !important;
-        line-height: 1.2 !important;
-        margin-bottom: 16px !important;
-        font-weight: 400 !important;
-        color: var(--text-primary) !important;
-        letter-spacing: 0.12em !important;
+    .hero h1 {
+        font-family: var(--font-title) !important;
+        font-size: 42px !important;
+        font-weight: 700 !important;
+        color: var(--china-red) !important;
+        margin-bottom: 12px !important;
+        letter-spacing: 0.15em !important;
     }
     
     .hero h2 {
-        font-size: 20px !important;
-        font-weight: 500 !important;
+        font-size: 16px !important;
+        font-weight: 400 !important;
         color: var(--text-muted) !important;
-        margin-bottom: 16px !important;
+        margin-bottom: 8px !important;
+        letter-spacing: 0.05em !important;
     }
     
-    .hero-sub {
-        color: var(--text-muted);
-        font-size: 15px;
-        max-width: 480px;
+    .hero-desc {
+        color: var(--text-secondary);
+        font-size: 14px;
+        max-width: 500px;
         margin: 0 auto;
-        line-height: 1.6;
+        line-height: 1.8;
     }
     
-    /* Clean Cards */
-    .apple-card {
-        background: var(--bg-card);
-        border-radius: var(--radius-xl);
-        padding: 32px 36px;
-        margin: 20px 0;
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow-sm);
-        transition: all 0.2s ease;
-    }
-    
-    .apple-card:hover {
-        border-color: var(--border-hover);
-        box-shadow: var(--shadow-md);
-    }
-    
-    /* Ocean Gradient Buttons with Wave Effect */
+    /* ========== 红色按钮 ========== */
     .stButton > button {
-        background: var(--ocean-gradient) !important;
-        background-size: 200% 200% !important;
+        background: var(--china-red) !important;
         color: white !important;
         border: none !important;
-        border-radius: var(--radius-md) !important;
-        padding: 12px 24px !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 10px 28px !important;
         font-size: 14px !important;
-        font-weight: 600 !important;
-        box-shadow: var(--shadow-ocean) !important;
-        transition: all 0.3s ease !important;
-        animation: ocean-shimmer 3s ease infinite !important;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stButton > button::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
-        opacity: 0;
-        transition: opacity 0.3s;
+        font-weight: 500 !important;
+        letter-spacing: 0.05em !important;
+        transition: all 0.2s ease !important;
+        box-shadow: var(--shadow-sm) !important;
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 28px var(--ocean-glow) !important;
-        animation: none !important;
-        background-position: right center !important;
+        background: var(--china-red-dark) !important;
+        box-shadow: var(--shadow-red) !important;
+        transform: translateY(-1px) !important;
     }
     
-    .stButton > button:hover::before {
-        opacity: 1;
-        animation: wave-ripple 1s ease-out;
+    .stButton > button:active {
+        transform: translateY(0) !important;
     }
     
-    @keyframes ocean-shimmer {
-        0%, 100% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-    }
-    
-    @keyframes wave-ripple {
-        0% { transform: scale(0); opacity: 0.5; }
-        100% { transform: scale(2); opacity: 0; }
-    }
-    
-    /* File Uploader with Ocean Border */
+    /* ========== 文件上传区 ========== */
     .stFileUploader {
         background: var(--bg-card);
-        border-radius: var(--radius-lg);
+        border: 2px dashed var(--china-red);
+        border-radius: var(--radius-md);
         padding: 40px 32px;
-        border: 2px dashed var(--ocean-mid);
-        transition: all 0.3s ease;
-        position: relative;
+        transition: all 0.2s ease;
     }
     
     .stFileUploader:hover {
-        border-color: var(--ocean-deep);
-        background: linear-gradient(135deg, rgba(125, 211, 192, 0.05) 0%, rgba(42, 157, 143, 0.08) 100%);
-        box-shadow: 0 0 20px rgba(77, 182, 172, 0.1);
+        background: var(--china-red-bg);
+        border-style: solid;
     }
     
-    /* Inputs with Ocean Focus */
+    /* ========== 输入框 ========== */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea,
     .stSelectbox > div > div > div {
         border-radius: var(--radius-sm) !important;
         border: 1px solid var(--border) !important;
-        padding: 12px 14px !important;
+        padding: 10px 14px !important;
         font-size: 14px !important;
         background: var(--bg-card) !important;
         color: var(--text-primary) !important;
@@ -284,84 +248,111 @@ st.markdown("""
     
     .stTextInput > div > div > input:focus,
     .stTextArea > div > div > textarea:focus {
-        border-color: var(--ocean-mid) !important;
-        box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.15) !important;
+        border-color: var(--china-red) !important;
+        box-shadow: 0 0 0 2px var(--china-red-bg) !important;
     }
     
-    /* Risk Tags */
-    .risk-safe { background: #ecfdf5; color: #047857; }
-    .risk-controversial { background: #fffbeb; color: #b45309; }
-    .risk-high { background: #fef2f2; color: #b91c1c; }
+    /* ========== 卡片样式 ========== */
+    .dang-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--china-red);
+        padding: 20px 24px;
+        margin: 12px 0;
+        transition: all 0.2s ease;
+    }
+    
+    .dang-card:hover {
+        box-shadow: var(--shadow-md);
+        border-left-color: var(--china-red-dark);
+    }
+    
+    .dang-card-title {
+        font-family: var(--font-title);
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .dang-card-title::before {
+        content: '◆';
+        color: var(--china-red);
+        font-size: 10px;
+    }
+    
+    /* ========== 风险标签 ========== */
+    .risk-safe { 
+        background: #e8f5e9; 
+        color: #2e7d32;
+        border: 1px solid #a5d6a7;
+    }
+    .risk-controversial { 
+        background: #fff8e1; 
+        color: #f57c00;
+        border: 1px solid #ffcc80;
+    }
+    .risk-high { 
+        background: #ffebee; 
+        color: #c62828;
+        border: 1px solid #ef9a9a;
+    }
     
     .risk-tag {
         display: inline-block;
-        padding: 4px 10px;
-        border-radius: 6px;
+        padding: 3px 10px;
         font-size: 12px;
         font-weight: 500;
     }
     
-    /* Type Tags */
+    /* ========== 类型标签 ========== */
     .type-tag {
         display: inline-block;
-        padding: 3px 8px;
-        border-radius: 5px;
+        padding: 2px 8px;
         font-size: 11px;
         font-weight: 500;
         margin-right: 6px;
         background: var(--bg-subtle);
         color: var(--text-secondary);
+        border: 1px solid var(--border);
     }
     
-    .type-person { background: #fef2f2; color: #dc2626; }
-    .type-location { background: rgba(77, 182, 172, 0.12); color: var(--ocean-deep); }
-    .type-org { background: #ecfdf5; color: #059669; }
-    .type-doc { background: #faf5ff; color: #9333ea; }
-    .type-concept { background: #fffbeb; color: #d97706; }
+    .type-person { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+    .type-location { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+    .type-org { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+    .type-doc { background: #f3e5f5; color: #7b1fa2; border-color: #ce93d8; }
+    .type-concept { background: #fff8e1; color: #f57c00; border-color: #ffcc80; }
     
-    /* Event Tags */
-    .event-meeting { background: rgba(77, 182, 172, 0.12); color: var(--ocean-deep); }
-    .event-conflict { background: #fef2f2; color: #dc2626; }
-    .event-speech { background: #ecfdf5; color: #059669; }
-    .event-policy { background: #faf5ff; color: #9333ea; }
-    .event-movement { background: #fffbeb; color: #d97706; }
+    /* ========== 事件标签 ========== */
+    .event-meeting { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+    .event-conflict { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+    .event-speech { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+    .event-policy { background: #f3e5f5; color: #7b1fa2; border-color: #ce93d8; }
+    .event-movement { background: #fff8e1; color: #f57c00; border-color: #ffcc80; }
     
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: var(--bg-card) !important;
-        border-radius: var(--radius-sm) !important;
-        font-weight: 500 !important;
-        border: 1px solid var(--border) !important;
-        color: var(--text-primary) !important;
-    }
-    
-    /* Metrics */
-    [data-testid="stMetricValue"] {
-        font-size: 32px !important;
-        font-weight: 600 !important;
-        color: var(--text-primary) !important;
-    }
-    
-    /* Event Card */
+    /* ========== 事件卡片 ========== */
     .event-card {
         background: var(--bg-card);
-        border-radius: var(--radius-md);
-        padding: 20px 24px;
-        margin: 12px 0;
         border: 1px solid var(--border);
-        transition: all 0.15s ease;
+        border-left: 4px solid var(--china-red);
+        padding: 16px 20px;
+        margin: 10px 0;
+        transition: all 0.2s ease;
     }
     
     .event-card:hover {
-        border-color: var(--accent);
         box-shadow: var(--shadow-sm);
     }
     
     .event-title {
+        font-family: var(--font-title);
         font-size: 15px;
         font-weight: 600;
         color: var(--text-primary);
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     
     .event-meta {
@@ -371,74 +362,120 @@ st.markdown("""
     }
     
     .event-desc {
+        font-family: var(--font-quote);
         font-size: 14px;
         color: var(--text-secondary);
-        line-height: 1.55;
+        line-height: 1.7;
     }
     
-    /* Multiselect with Ocean Tags */
+    /* ========== Expander ========== */
+    .streamlit-expanderHeader {
+        background: var(--bg-subtle) !important;
+        border: 1px solid var(--border) !important;
+        font-weight: 500 !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* ========== Metrics ========== */
+    [data-testid="stMetricValue"] {
+        font-family: var(--font-title) !important;
+        font-size: 32px !important;
+        font-weight: 700 !important;
+        color: var(--china-red) !important;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        font-size: 13px !important;
+        color: var(--text-muted) !important;
+    }
+    
+    /* ========== Multiselect ========== */
     .stMultiSelect [data-baseweb="tag"] {
-        background: var(--ocean-gradient) !important;
-        border-radius: 6px !important;
+        background: var(--china-red) !important;
+        border-radius: 2px !important;
     }
     
-    /* Slider with Ocean Color */
+    /* ========== Slider ========== */
     .stSlider [data-baseweb="slider"] [role="slider"] {
-        background: var(--ocean-gradient) !important;
-        box-shadow: 0 2px 8px var(--ocean-glow) !important;
+        background: var(--china-red) !important;
     }
     
     .stSlider [data-baseweb="slider"] > div > div {
-        background: var(--ocean-mid) !important;
+        background: var(--china-red) !important;
     }
     
-    /* Progress with Ocean Wave */
+    /* ========== Progress ========== */
     .stProgress > div > div {
-        background: var(--ocean-gradient) !important;
-        background-size: 200% 100% !important;
-        animation: ocean-shimmer 2s ease infinite !important;
+        background: var(--china-red) !important;
     }
     
-    /* Scrollbar */
+    /* ========== Tabs ========== */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        border-bottom: 2px solid var(--border);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 0 !important;
+        padding: 12px 24px !important;
+        font-weight: 500 !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: transparent !important;
+        border-bottom: 3px solid var(--china-red) !important;
+        color: var(--china-red) !important;
+    }
+    
+    /* ========== Scrollbar ========== */
     ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
     }
     
     ::-webkit-scrollbar-track {
-        background: transparent;
+        background: var(--bg-subtle);
     }
     
     ::-webkit-scrollbar-thumb {
-        background: var(--ocean-light);
-        border-radius: 3px;
+        background: #ccc;
+        border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: var(--ocean-mid);
+        background: var(--china-red);
     }
     
-    /* Hero Title with Ocean Gradient */
-    .ocean-title {
-        background: var(--ocean-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    /* ========== 分隔线 ========== */
+    .dang-divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 24px 0;
     }
     
-    /* Ocean Glow Effect for Cards on Hover */
-    .event-card:hover {
-        border-color: var(--ocean-mid);
-        box-shadow: 0 4px 16px rgba(77, 182, 172, 0.12);
+    /* ========== 区块标题 ========== */
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--china-red);
     }
     
-    /* Metrics with Ocean Color */
-    [data-testid="stMetricValue"] {
-        background: var(--ocean-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 32px !important;
-        font-weight: 600 !important;
+    .section-header::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: var(--china-red);
+    }
+    
+    .section-title {
+        font-family: var(--font-title);
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1221,19 +1258,19 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     """构建以事件为中心的图谱"""
     G = nx.DiGraph()
     
-    # 颜色配置
+    # 颜色配置 - 党史文献风格
     entity_colors = {
-        "PERSON": "#ff6b6b", "LOCATION": "#7c9dff", "ORG": "#22c55e",
-        "DOCUMENT": "#c084fc", "CONCEPT": "#f59e0b"
+        "PERSON": "#c62828", "LOCATION": "#1565c0", "ORG": "#2e7d32",
+        "DOCUMENT": "#7b1fa2", "CONCEPT": "#f57c00"
     }
     
     event_colors = {
-        "MEETING": "#0071e3", "CONFLICT": "#ef4444", "SPEECH": "#10b981",
-        "POLICY": "#8b5cf6", "MOVEMENT": "#f97316"
+        "MEETING": "#1565c0", "CONFLICT": "#c62828", "SPEECH": "#2e7d32",
+        "POLICY": "#7b1fa2", "MOVEMENT": "#f57c00"
     }
     
     risk_border = {
-        "SAFE": "#22c55e", "CONTROVERSIAL": "#f59e0b", "HIGH_RISK": "#ef4444"
+        "SAFE": "#2e7d32", "CONTROVERSIAL": "#f57c00", "HIGH_RISK": "#c62828"
     }
     
     # 添加实体节点
@@ -1289,7 +1326,7 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
         src, tgt = r["source_id"], r["target_id"]
         if (src in entity_map or src in event_map) and (tgt in entity_map or tgt in event_map):
             w = int(r.get("weight", 5))
-            edge_color = "#0071e3" if w >= 7 else ("#6e6e73" if w >= 5 else "#c7c7cc")
+            edge_color = "#C41E3A" if w >= 7 else ("#666666" if w >= 5 else "#aaaaaa")
             G.add_edge(
                 src, tgt,
                 label=r.get("relation", ""),
@@ -1301,15 +1338,21 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     return G
 
 # ============================================
-# Navigation Bar
+# Navigation Bar - 党史文献风格
 # ============================================
 st.markdown("""
-<div class="apple-nav">
+<div class="dang-nav">
     <div class="nav-content">
-        <div class="nav-title">📖 解书客</div>
+        <div class="nav-brand">
+            <div class="nav-logo">📖</div>
+            <div>
+                <div class="nav-title">解书客</div>
+                <div class="nav-subtitle">INTELLIGENT DOCUMENT ANALYSIS</div>
+            </div>
+        </div>
     </div>
 </div>
-<div style="height:56px"></div>
+<div style="height:60px"></div>
 """, unsafe_allow_html=True)
 
 # API Config
@@ -1374,10 +1417,10 @@ with st.sidebar:
 if st.session_state.step == 1:
     st.markdown("""
     <div class="hero">
-        <p class="hero-tag">雪山千古冷，独照峨眉峰。</p>
+        <div class="hero-badge">智能文献解析系统</div>
         <h1>解书客</h1>
-        <h2>上传文档，构建历史事件图谱</h2>
-        <p class="hero-sub">智能切分 → 上下文注入 → 抽取事件与关系 → 风险评估</p>
+        <h2>上传文档，构建历史事件知识图谱</h2>
+        <p class="hero-desc">基于大语言模型的智能切分 · 上下文注入抽取 · 实体关系识别 · 风险评估</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1510,9 +1553,10 @@ if st.session_state.step == 1:
 # ============================================
 elif st.session_state.step == 2:
     st.markdown("""
-    <div style="text-align:center; padding:20px 0 40px;">
-        <h1 style="font-size:40px;">审核与调整</h1>
-        <p style="color:#86868b; font-size:17px;">查看抽取的事件和实体，调整风险等级</p>
+    <div style="text-align:center; padding:30px 0 40px; background: linear-gradient(180deg, rgba(196,30,58,0.05) 0%, #fff 100%);">
+        <div class="hero-badge" style="margin-bottom:16px;">内容审核</div>
+        <h1 style="font-size:32px; color:#C41E3A; letter-spacing:0.1em;">审核与调整</h1>
+        <p style="color:#7a7a7a; font-size:14px;">查看抽取的事件和实体，调整风险等级</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1633,9 +1677,10 @@ elif st.session_state.step == 2:
 # ============================================
 elif st.session_state.step == 3:
     st.markdown("""
-    <div style="text-align:center; padding:20px 0 30px;">
-        <h1 style="font-size:40px;">事件知识图谱</h1>
-        <p style="color:#86868b;">菱形为事件节点，圆形为实体节点</p>
+    <div style="text-align:center; padding:30px 0 30px; background: linear-gradient(180deg, rgba(196,30,58,0.05) 0%, #fff 100%);">
+        <div class="hero-badge" style="margin-bottom:16px;">可视化展示</div>
+        <h1 style="font-size:32px; color:#C41E3A; letter-spacing:0.1em;">事件知识图谱</h1>
+        <p style="color:#7a7a7a; font-size:14px;">◆ 菱形为事件节点 &nbsp;|&nbsp; ● 圆形为实体节点</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1735,18 +1780,18 @@ elif st.session_state.step == 3:
     
     # Legend
     st.markdown("""
-    <div style="display:flex; justify-content:center; gap:24px; margin-top:16px; flex-wrap:wrap;">
-        <span style="font-size:13px;"><span style="color:#0071e3;">◆</span> 会议</span>
-        <span style="font-size:13px;"><span style="color:#ef4444;">◆</span> 冲突</span>
-        <span style="font-size:13px;"><span style="color:#10b981;">◆</span> 讲话</span>
-        <span style="font-size:13px;"><span style="color:#8b5cf6;">◆</span> 政策</span>
-        <span style="font-size:13px;"><span style="color:#f97316;">◆</span> 运动</span>
+    <div style="display:flex; justify-content:center; gap:20px; margin-top:16px; flex-wrap:wrap; padding:12px 20px; background:#fafafa; border:1px solid #e5e5e5;">
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#1565c0;">◆</span> 会议</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#c62828;">◆</span> 冲突</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#2e7d32;">◆</span> 讲话</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#7b1fa2;">◆</span> 政策</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#f57c00;">◆</span> 运动</span>
         <span style="color:#ccc;">|</span>
-        <span style="font-size:13px;"><span style="color:#ff6b6b;">●</span> 人物</span>
-        <span style="font-size:13px;"><span style="color:#22c55e;">●</span> 组织</span>
-        <span style="font-size:13px;"><span style="color:#7c9dff;">●</span> 地点</span>
-        <span style="font-size:13px;"><span style="color:#c084fc;">●</span> 文件</span>
-        <span style="font-size:13px;"><span style="color:#f59e0b;">●</span> 概念</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#c62828;">●</span> 人物</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#2e7d32;">●</span> 组织</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#1565c0;">●</span> 地点</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#7b1fa2;">●</span> 文件</span>
+        <span style="font-size:12px; color:#4a4a4a;"><span style="color:#f57c00;">●</span> 概念</span>
     </div>
     """, unsafe_allow_html=True)
     
