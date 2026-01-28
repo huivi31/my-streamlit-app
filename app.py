@@ -20,410 +20,187 @@ st.set_page_config(page_title="解书客", layout="wide", page_icon="📖", init
 # 党史文献研究院风格 - 中国红 + 庄重严肃
 # ============================================
 st.markdown("""
+
 <style>
-    /* 公文字体 */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&display=swap');
+    /* ========== Global Theme: CPC Official Document ========== */
     :root {
-        /* 中国红配色 */
-        --china-red: #C41E3A;
-        --china-red-dark: #A01830;
-        --china-red-light: #E8384F;
-        --china-red-bg: rgba(196, 30, 58, 0.08);
-        --gold: #D4AF37;
-        --gold-light: #F5E6C4;
-        
-        /* 背景色 */
-        --bg-body: #ffffff;
-        --bg-card: #ffffff;
-        --bg-subtle: #fafafa;
-        --bg-header: var(--china-red);
-        
-        /* 文字色 */
-        --text-primary: #1a1a1a;
-        --text-secondary: #4a4a4a;
-        --text-muted: #7a7a7a;
-        --text-light: #ffffff;
-        
-        /* 边框 */
-        --border: #e5e5e5;
-        --border-red: var(--china-red);
-        
-        /* 阴影 */
-        --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-        --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-        --shadow-red: 0 4px 16px rgba(196, 30, 58, 0.2);
-        
-        /* 圆角 - 党政风格用较小圆角 */
-        --radius-sm: 4px;
-        --radius-md: 6px;
-        --radius-lg: 8px;
-        
-        /* 公文字体 */
-        --font-title: "Noto Serif SC", "SimSun", "宋体", serif;
-        --font-body: "Noto Sans SC", "Microsoft YaHei", "微软雅黑", sans-serif;
-        --font-quote: "KaiTi", "楷体", "STKaiti", serif;
+        --china-red: #B71C1C;
+        --china-red-hover: #D32F2F;
+        --gold-main: #FFD700;
+        --gold-accent: #DAA520;
+        --text-main: #2C2C2C;
+        --text-sub: #555555;
+        --bg-page: #FAFAFA;
+        --bg-card: #FFFFFF;
+        --border-color: #E0E0E0;
+        --font-serif: "STFangsong", "FangSong", "SimSun", serif;
     }
-    
+
+    /* Standard Reset & Typography */
     .stApp {
-        background: var(--bg-body) !important;
+        background-color: var(--bg-page);
+        color: var(--text-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    #MainMenu, footer, header {visibility: hidden; height: 0;}
-    .stDeployButton, [data-testid="stToolbar"], [data-testid="stDecoration"] {display: none;}
-    
-    /* 全局字体 */
-    * {
-        font-family: var(--font-body);
-        font-weight: 400;
-        -webkit-font-smoothing: antialiased;
-        line-height: 1.8;
-    }
-    
-    /* 标题用宋体 */
     h1, h2, h3 {
-        font-family: var(--font-title) !important;
-        font-weight: 600 !important;
-        color: var(--text-primary) !important;
-        letter-spacing: 0.02em !important;
-    }
-    
-    h1 { font-size: 26px !important; }
-    h2 { font-size: 22px !important; }
-    h3 { font-size: 18px !important; }
-    
-    /* 正文 */
-    p, span, label, div {
-        font-family: var(--font-body);
-        color: var(--text-secondary);
-    }
-    
-    /* ========== Hero 区域 ========== */
-    .hero {
-        text-align: center;
-        padding: 100px 24px 50px;
-        background: linear-gradient(180deg, var(--china-red-bg) 0%, var(--bg-body) 100%);
-    }
-    
-    .hero-badge {
-        display: inline-block;
-        background: var(--china-red);
-        color: white;
-        padding: 6px 16px;
-        font-size: 13px;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        margin-bottom: 20px;
-    }
-    
-    .hero h1 {
-        font-family: var(--font-title) !important;
-        font-size: 42px !important;
-        font-weight: 700 !important;
+        font-family: var(--font-serif) !important;
         color: var(--china-red) !important;
-        margin-bottom: 12px !important;
-        letter-spacing: 0.15em !important;
+        font-weight: bold !important;
     }
+
+    /* ========== Widgets Styling ========== */
     
-    .hero h2 {
-        font-size: 16px !important;
-        font-weight: 400 !important;
-        color: var(--text-muted) !important;
-        margin-bottom: 8px !important;
-        letter-spacing: 0.05em !important;
-    }
-    
-    .hero-desc {
-        color: var(--text-secondary);
-        font-size: 14px;
-        max-width: 500px;
-        margin: 0 auto;
-        line-height: 1.8;
-    }
-    
-    /* ========== 红色按钮 ========== */
+    /* Buttons: Primary Red Action */
     .stButton > button {
-        background: var(--china-red) !important;
-        color: white !important;
+        background: linear-gradient(135deg, var(--china-red) 0%, #8B0000 100%) !important;
+        color: #FFD700 !important; /* Gold text */
         border: none !important;
-        border-radius: var(--radius-sm) !important;
-        padding: 10px 28px !important;
-        font-size: 14px !important;
-        font-weight: 500 !important;
-        letter-spacing: 0.05em !important;
-        transition: all 0.2s ease !important;
-        box-shadow: var(--shadow-sm) !important;
+        border-radius: 4px !important;
+        padding: 0.6rem 1.2rem !important;
+        font-family: var(--font-serif) !important;
+        font-size: 1.1rem !important;
+        letter-spacing: 0.1em !important;
+        box-shadow: 0 4px 6px rgba(139, 0, 0, 0.2);
+        transition: all 0.3s ease;
     }
-    
     .stButton > button:hover {
-        background: var(--china-red-dark) !important;
-        box-shadow: var(--shadow-red) !important;
-        transform: translateY(-1px) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(139, 0, 0, 0.3);
     }
     
-    .stButton > button:active {
-        transform: translateY(0) !important;
-    }
-    
-    /* ========== 文件上传区 ========== */
-    .stFileUploader {
-        background: var(--bg-card);
-        border: 2px dashed var(--china-red);
-        border-radius: var(--radius-md);
-        padding: 40px 32px;
-        transition: all 0.2s ease;
-    }
-    
-    .stFileUploader:hover {
-        background: var(--china-red-bg);
-        border-style: solid;
-    }
-    
-    /* ========== 输入框 ========== */
-    .stTextInput > div > div > input,
-    .stTextArea > div > div > textarea,
-    .stSelectbox > div > div > div {
-        border-radius: var(--radius-sm) !important;
-        border: 1px solid var(--border) !important;
-        padding: 10px 14px !important;
-        font-size: 14px !important;
-        background: var(--bg-card) !important;
-        color: var(--text-primary) !important;
-        transition: all 0.2s ease !important;
-    }
-    
-    .stTextInput > div > div > input:focus,
-    .stTextArea > div > div > textarea:focus {
-        border-color: var(--china-red) !important;
-        box-shadow: 0 0 0 2px var(--china-red-bg) !important;
-    }
-    
-    /* ========== 卡片样式 ========== */
-    .dang-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-left: 4px solid var(--china-red);
-        padding: 20px 24px;
-        margin: 12px 0;
-        transition: all 0.2s ease;
-    }
-    
-    .dang-card:hover {
-        box-shadow: var(--shadow-md);
-        border-left-color: var(--china-red-dark);
-    }
-    
-    .dang-card-title {
-        font-family: var(--font-title);
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .dang-card-title::before {
-        content: '◆';
-        color: var(--china-red);
-        font-size: 10px;
-    }
-    
-    /* ========== 风险标签 ========== */
-    .risk-safe { 
-        background: #e8f5e9; 
-        color: #2e7d32;
-        border: 1px solid #a5d6a7;
-    }
-    .risk-controversial { 
-        background: #fff8e1; 
-        color: #f57c00;
-        border: 1px solid #ffcc80;
-    }
-    .risk-high { 
-        background: #ffebee; 
-        color: #c62828;
-        border: 1px solid #ef9a9a;
-    }
-    
-    .risk-tag {
-        display: inline-block;
-        padding: 3px 10px;
-        font-size: 12px;
-        font-weight: 500;
-    }
-    
-    /* ========== 类型标签 ========== */
-    .type-tag {
-        display: inline-block;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: 500;
-        margin-right: 6px;
-        background: var(--bg-subtle);
-        color: var(--text-secondary);
-        border: 1px solid var(--border);
-    }
-    
-    .type-person { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-    .type-location { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
-    .type-org { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
-    .type-doc { background: #f3e5f5; color: #7b1fa2; border-color: #ce93d8; }
-    .type-concept { background: #fff8e1; color: #f57c00; border-color: #ffcc80; }
-    
-    /* ========== 事件标签 ========== */
-    .event-meeting { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
-    .event-conflict { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-    .event-speech { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
-    .event-policy { background: #f3e5f5; color: #7b1fa2; border-color: #ce93d8; }
-    .event-movement { background: #fff8e1; color: #f57c00; border-color: #ffcc80; }
-    
-    /* ========== 事件卡片 ========== */
-    .event-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-left: 4px solid var(--china-red);
-        padding: 16px 20px;
-        margin: 10px 0;
-        transition: all 0.2s ease;
-    }
-    
-    .event-card:hover {
-        box-shadow: var(--shadow-sm);
-    }
-    
-    .event-title {
-        font-family: var(--font-title);
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 6px;
-    }
-    
-    .event-meta {
-        font-size: 13px;
-        color: var(--text-muted);
-        margin-bottom: 8px;
-    }
-    
-    .event-desc {
-        font-family: var(--font-quote);
-        font-size: 14px;
-        color: var(--text-secondary);
-        line-height: 1.7;
-    }
-    
-    /* ========== Expander ========== */
-    .streamlit-expanderHeader {
-        background: var(--bg-subtle) !important;
-        border: 1px solid var(--border) !important;
-        font-weight: 500 !important;
-        color: var(--text-primary) !important;
-    }
-    
-    /* ========== Metrics ========== */
-    [data-testid="stMetricValue"] {
-        font-family: var(--font-title) !important;
-        font-size: 32px !important;
-        font-weight: 700 !important;
-        color: var(--china-red) !important;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        font-size: 13px !important;
-        color: var(--text-muted) !important;
-    }
-    
-    /* ========== Multiselect ========== */
-    .stMultiSelect [data-baseweb="tag"] {
-        background: var(--china-red) !important;
-        border-radius: 2px !important;
-    }
-    
-    /* ========== Slider ========== */
-    .stSlider [data-baseweb="slider"] [role="slider"] {
-        background: var(--china-red) !important;
-    }
-    
-    .stSlider [data-baseweb="slider"] > div > div {
-        background: var(--china-red) !important;
-    }
-    
-    /* ========== Progress ========== */
-    .stProgress > div > div {
-        background: var(--china-red) !important;
-    }
-    
-    /* ========== Tabs ========== */
+    /* Tabs: Official Document Style */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0;
-        border-bottom: 2px solid var(--border);
+        gap: 8px;
+        background-color: transparent;
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 0px;
     }
-    
     .stTabs [data-baseweb="tab"] {
-        border-radius: 0 !important;
-        padding: 12px 24px !important;
-        font-weight: 500 !important;
+        background-color: transparent !important;
+        border: none !important;
+        color: var(--text-sub) !important;
+        font-family: var(--font-serif) !important;
+        font-size: 1.1rem !important;
     }
-    
     .stTabs [aria-selected="true"] {
-        background: transparent !important;
-        border-bottom: 3px solid var(--china-red) !important;
         color: var(--china-red) !important;
+        border-bottom: 3px solid var(--china-red) !important;
+        font-weight: bold !important;
+        background-color: rgba(183, 28, 28, 0.05) !important;
     }
-    
-    /* ========== Scrollbar ========== */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: var(--bg-subtle);
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: #ccc;
+
+    /* Text Inputs */
+    .stTextInput > div > div > input {
+        border: 1px solid var(--border-color);
         border-radius: 4px;
+        padding: 0.5rem;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: var(--china-red) !important;
+        box-shadow: 0 0 0 2px rgba(183, 28, 28, 0.2) !important;
+    }
+
+    /* Cards / Containers */
+    [data-testid="stVerticalBlock"] {
+        gap: 1rem;
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #F8F9FA;
+        border-right: 1px solid #E0E0E0;
     }
     
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--china-red);
+    /* Top Header Bar Adjustments */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
     }
-    
-    /* ========== 分隔线 ========== */
-    .dang-divider {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 24px 0;
-    }
-    
-    /* ========== 区块标题 ========== */
-    .section-header {
+
+    /* ========== CPC Header Banner (Preserved & Optimized) ========== */
+    .cpc-header {
+        position: relative;
+        background: linear-gradient(90deg, #D32F2F 0%, #C62828 50%, #B71C1C 100%);
+        padding: 20px 0;
+        margin: -6rem -4rem 30px -4rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        width: calc(100% + 8rem);
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 16px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid var(--china-red);
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden; /* Prevent scrollbar if font is too big */
     }
     
-    .section-header::before {
+    .cpc-header::before {
         content: '';
-        width: 4px;
-        height: 20px;
-        background: var(--china-red);
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 60%);
+        pointer-events: none;
     }
     
-    .section-title {
-        font-family: var(--font-title);
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-primary);
+    .cpc-header-title {
+        font-family: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+        font-size: 13vw;
+        font-weight: 900;
         margin: 0;
+        padding: 0 20px;
+        letter-spacing: 0.02em;
+        line-height: 1.1;
+        
+        /* 恢复亮金渐变 */
+        background: linear-gradient(180deg, #FFFFE0 10%, #FFD700 40%, #DAA520 70%, #FFD700 90%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        
+        /* 柔和的深红投影 + 黑色远景虚化 = 悬浮感 */
+        filter: drop-shadow(0 2px 0 #800000) drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+        
+        /* 极细的深色描边增加清晰度，但不过分 */
+        -webkit-text-stroke: 1px rgba(139, 0, 0, 0.2);
     }
+    
+    .decorative-stars {
+        position: absolute;
+        width: 100%; height: 100%;
+        top: 0; left: 0; pointer-events: none; z-index: 0;
+    }
+    
+    .star {
+        position: absolute;
+        color: #FFD700;
+        font-size: 24px;
+        opacity: 0.5;
+        animation: star-pulse 4s ease-in-out infinite;
+        filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8));
+    }
+    
+    @keyframes star-pulse {
+        0%, 100% { opacity: 0.3; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.3); }
+    }
+    
+    .star:nth-child(1) { top: 20%; left: 8%; font-size: 28px; animation-delay: 0s; }
+    .star:nth-child(2) { top: 70%; left: 5%; font-size: 20px; animation-delay: 1s; }
+    .star:nth-child(3) { top: 30%; right: 8%; font-size: 26px; animation-delay: 2s; }
+    .star:nth-child(4) { top: 80%; right: 12%; font-size: 18px; animation-delay: 3s; }
 </style>
+
+<!-- CPC Header Banner -->
+<div class="cpc-header">
+    <div class="decorative-stars">
+        <div class="star">★</div>
+        <div class="star">★</div>
+        <div class="star">★</div>
+        <div class="star">★</div>
+    </div>
+    <h1 class="cpc-header-title">党政历史文献智能化处理</h1>
+</div>
+
 """, unsafe_allow_html=True)
 
 # ============================================
@@ -1282,188 +1059,6 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
             )
     
     return G
-
-# ============================================
-# Navigation Bar - 1:1 复刻党史文献研究院
-# ============================================
-st.markdown("""
-<style>
-    .stApp > header { display: none !important; }
-    .block-container { padding-top: 0 !important; }
-    [data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
-    .main .block-container { padding-top: 0 !important; max-width: 100% !important; }
-    
-    .dswxy-wrapper {
-        margin: -6rem -4rem 0 -4rem;
-        padding-top: 6rem;
-        width: calc(100% + 8rem);
-    }
-    
-    .dswxy-top {
-        background: #8B0000;
-        height: 24px;
-        position: relative;
-    }
-    
-    .dswxy-main {
-        background: linear-gradient(180deg, #D32F2F 0%, #C62828 30%, #B71C1C 100%);
-        min-height: 100px;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-    
-    .dswxy-flag {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 280px;
-        height: 100%;
-        background: linear-gradient(120deg, 
-            rgba(239,83,80,0.95) 0%, 
-            rgba(229,57,53,0.85) 30%, 
-            rgba(198,40,40,0.6) 60%,
-            transparent 100%);
-        clip-path: polygon(0 0, 85% 0, 55% 100%, 0 100%);
-    }
-    
-    .dswxy-flag-inner {
-        position: absolute;
-        left: 30px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 70px;
-        height: 70px;
-    }
-    
-    .dswxy-flag-emblem {
-        width: 70px;
-        height: 70px;
-        background: radial-gradient(circle at 30% 30%, #FFD54F 0%, #FFC107 50%, #FF8F00 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        color: #B71C1C;
-        box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-    }
-    
-    .dswxy-center {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        z-index: 10;
-    }
-    
-    .dswxy-emblem {
-        width: 58px;
-        height: 58px;
-        border: 3px solid;
-        border-color: #FFD54F;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 32px;
-        background: transparent;
-        color: #FFD54F;
-        box-shadow: 0 0 10px rgba(255,215,0,0.3);
-    }
-    
-    .dswxy-title {
-        font-family: "Noto Serif SC", "FangSong", "SimSun", "宋体", serif;
-        font-size: 42px;
-        font-weight: 400;
-        color: #FFD54F;
-        letter-spacing: 0.08em;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        margin: 0;
-    }
-    
-    .dswxy-search {
-        position: absolute;
-        right: 30px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.25);
-        padding: 8px 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        z-index: 10;
-    }
-    
-    .dswxy-search-text {
-        color: rgba(255,255,255,0.6);
-        font-size: 14px;
-    }
-    
-    .dswxy-search-icon {
-        color: rgba(255,255,255,0.6);
-        font-size: 14px;
-    }
-    
-    .dswxy-nav {
-        background: linear-gradient(180deg, #A52A2A 0%, #8B0000 100%);
-        padding: 12px 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0;
-        flex-wrap: wrap;
-        border-top: 1px solid rgba(255,200,200,0.15);
-    }
-    
-    .dswxy-nav-home {
-        color: #FFD54F;
-        font-size: 14px;
-        font-weight: 500;
-        padding: 0 20px;
-        border-right: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    .dswxy-nav-item {
-        color: rgba(255,255,255,0.9);
-        font-size: 14px;
-        padding: 0 20px;
-        border-right: 1px solid rgba(255,255,255,0.2);
-    }
-    
-    .dswxy-nav-item:last-child {
-        border-right: none;
-    }
-</style>
-
-<div class="dswxy-wrapper">
-    <div class="dswxy-top"></div>
-    <div class="dswxy-main">
-        <div class="dswxy-flag">
-            <div class="dswxy-flag-inner">
-                <div class="dswxy-flag-emblem">☭</div>
-            </div>
-        </div>
-        <div class="dswxy-center">
-            <div class="dswxy-emblem">☭</div>
-            <span class="dswxy-title">党政文献知识图谱生成</span>
-        </div>
-        <div class="dswxy-search">
-            <span class="dswxy-search-text">搜索</span>
-            <span class="dswxy-search-icon">🔍</span>
-        </div>
-    </div>
-    <div class="dswxy-nav">
-        <span class="dswxy-nav-home">首页</span>
-        <span class="dswxy-nav-item">文献编辑</span>
-        <span class="dswxy-nav-item">知识图谱</span>
-        <span class="dswxy-nav-item">数据分析</span>
-        <span class="dswxy-nav-item">成果总库</span>
-    </div>
-</div>
-""", unsafe_allow_html=True)
 
 # API Config
 with st.container():
