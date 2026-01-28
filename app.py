@@ -98,60 +98,6 @@ st.markdown("""
         color: var(--text-secondary);
     }
     
-    /* ========== 顶部导航栏 - 中国红 ========== */
-    .dang-nav {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 60px;
-        background: var(--china-red);
-        z-index: 99999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    
-    .nav-content {
-        width: 100%;
-        max-width: 1200px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 40px;
-    }
-    
-    .nav-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    
-    .nav-logo {
-        width: 36px;
-        height: 36px;
-        background: var(--gold);
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-    }
-    
-    .nav-title {
-        font-family: var(--font-title);
-        font-size: 22px;
-        font-weight: 600;
-        color: var(--text-light);
-        letter-spacing: 0.15em;
-    }
-    
-    .nav-subtitle {
-        font-size: 12px;
-        color: rgba(255,255,255,0.8);
-        letter-spacing: 0.3em;
-        margin-top: 2px;
-    }
-    
     /* ========== Hero 区域 ========== */
     .hero {
         text-align: center;
@@ -1338,21 +1284,63 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     return G
 
 # ============================================
-# Navigation Bar - 党史文献风格
+# Navigation Bar - 党史文献风格（居中大标题）
 # ============================================
 st.markdown("""
-<div class="dang-nav">
-    <div class="nav-content">
-        <div class="nav-brand">
-            <div class="nav-logo">📖</div>
-            <div>
-                <div class="nav-title">解书客</div>
-                <div class="nav-subtitle">INTELLIGENT DOCUMENT ANALYSIS</div>
-            </div>
-        </div>
+<div class="dang-header">
+    <div class="header-content">
+        <span class="header-icon">☭</span>
+        <span class="header-title">党政文献知识图谱生成</span>
+    </div>
+    <div class="header-line">
+        <div class="line-left"></div>
+        <div class="line-center"></div>
+        <div class="line-right"></div>
     </div>
 </div>
-<div style="height:60px"></div>
+<style>
+    .dang-header {
+        background: #ffffff;
+        padding: 28px 0 0 0;
+        text-align: center;
+    }
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    }
+    .header-icon {
+        font-size: 42px;
+        color: #C41E3A;
+        line-height: 1;
+    }
+    .header-title {
+        font-family: "Noto Serif SC", "SimSun", "宋体", serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: #C41E3A;
+        letter-spacing: 0.12em;
+    }
+    .header-line {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+        padding: 0 60px;
+    }
+    .line-left, .line-right {
+        flex: 1;
+        height: 1px;
+        background: #e5e5e5;
+    }
+    .line-center {
+        width: 120px;
+        height: 4px;
+        background: #C41E3A;
+        margin: 0 0;
+    }
+</style>
 """, unsafe_allow_html=True)
 
 # API Config
