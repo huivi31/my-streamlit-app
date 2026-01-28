@@ -1288,100 +1288,11 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
 # ============================================
 st.markdown("""
 <style>
-    /* 去掉 Streamlit 默认顶部间距 */
     .stApp > header { display: none !important; }
     .block-container { padding-top: 0 !important; }
     [data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
     .main .block-container { padding-top: 0 !important; max-width: 100% !important; }
-    section[data-testid="stSidebar"] { top: 0 !important; }
-</style>
-
-<!-- 顶部小条 -->
-<div class="top-bar"></div>
-
-<!-- 主头部区域 -->
-<div class="main-header">
-    <!-- 左侧红旗装饰 -->
-    <div class="flag-decoration">
-        <svg viewBox="0 0 200 150" class="flag-svg">
-            <!-- 飘扬的红旗 -->
-            <defs>
-                <linearGradient id="flagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:0.9"/>
-                    <stop offset="50%" style="stop-color:#E53935;stop-opacity:0.85"/>
-                    <stop offset="100%" style="stop-color:#B71C1C;stop-opacity:0.8"/>
-                </linearGradient>
-                <linearGradient id="goldGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:#FFE082"/>
-                    <stop offset="50%" style="stop-color:#FFD54F"/>
-                    <stop offset="100%" style="stop-color:#FFC107"/>
-                </linearGradient>
-            </defs>
-            <!-- 旗帜波浪形状 -->
-            <path d="M20 20 Q60 10 100 25 Q140 40 180 30 L180 110 Q140 120 100 105 Q60 90 20 100 Z" fill="url(#flagGrad)"/>
-            <!-- 党徽在旗帜上 -->
-            <g transform="translate(70, 45) scale(0.5)">
-                <circle cx="50" cy="50" r="35" fill="url(#goldGrad2)" opacity="0.9"/>
-                <!-- 镰刀锤头简化 -->
-                <rect x="45" y="30" width="10" height="28" fill="#C62828" rx="1"/>
-                <rect x="40" y="28" width="20" height="6" fill="#C62828" rx="1"/>
-                <path d="M 30 60 Q 28 45 40 38 Q 48 33 55 38 L 52 42 Q 47 38 42 42 Q 34 48 36 58 Z" fill="#C62828"/>
-            </g>
-        </svg>
-    </div>
     
-    <!-- 中间标题区域 -->
-    <div class="header-center">
-        <div class="header-title-row">
-            <!-- 党徽 -->
-            <svg class="emblem" viewBox="0 0 100 100" width="52" height="52">
-                <defs>
-                    <linearGradient id="emblemGold" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style="stop-color:#FFE57F"/>
-                        <stop offset="30%" style="stop-color:#FFD54F"/>
-                        <stop offset="70%" style="stop-color:#FFCA28"/>
-                        <stop offset="100%" style="stop-color:#FFB300"/>
-                    </linearGradient>
-                </defs>
-                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#emblemGold)" stroke-width="2.5"/>
-                <rect x="45" y="28" width="10" height="30" fill="url(#emblemGold)" rx="1"/>
-                <rect x="40" y="25" width="20" height="7" fill="url(#emblemGold)" rx="1"/>
-                <path d="M 32 65 Q 30 48 42 38 Q 50 32 58 38 L 54 43 Q 49 39 44 43 Q 36 50 38 62 Z" fill="url(#emblemGold)"/>
-            </svg>
-            <!-- 标题文字 -->
-            <h1 class="site-title">党政文献知识图谱生成</h1>
-        </div>
-    </div>
-    
-    <!-- 右侧搜索框 -->
-    <div class="header-right">
-        <div class="search-box">
-            <span class="search-text">搜索</span>
-            <span class="search-icon">🔍</span>
-        </div>
-    </div>
-</div>
-
-<!-- 导航栏 -->
-<div class="nav-bar">
-    <div class="nav-inner">
-        <span class="nav-home">首页</span>
-        <span class="nav-divider">|</span>
-        <span class="nav-item">机构概况</span>
-        <span class="nav-divider">|</span>
-        <span class="nav-item">理论研究</span>
-        <span class="nav-divider">|</span>
-        <span class="nav-item">文献编辑</span>
-        <span class="nav-divider">|</span>
-        <span class="nav-item">知识图谱</span>
-        <span class="nav-divider">|</span>
-        <span class="nav-item">数据分析</span>
-        <span class="nav-divider">|</span>
-        <span class="nav-item">成果总库</span>
-    </div>
-</div>
-
-<style>
     .top-bar {
         background: #8B0000;
         height: 28px;
@@ -1392,52 +1303,53 @@ st.markdown("""
     
     .main-header {
         background: linear-gradient(180deg, #C62828 0%, #B71C1C 100%);
-        padding: 20px 40px;
+        padding: 24px 40px;
         margin: 0 -4rem;
         width: calc(100% + 8rem);
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         position: relative;
-        min-height: 90px;
+        min-height: 80px;
     }
     
-    .flag-decoration {
+    .flag-bg {
         position: absolute;
-        left: 40px;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 220px;
+        background: linear-gradient(135deg, rgba(255,107,107,0.4) 0%, rgba(229,57,53,0.3) 50%, transparent 100%);
+        clip-path: polygon(0 0, 100% 20%, 80% 100%, 0 80%);
+    }
+    
+    .flag-emblem {
+        position: absolute;
+        left: 60px;
         top: 50%;
         transform: translateY(-50%);
-        width: 180px;
-        height: 130px;
+        width: 50px;
+        height: 50px;
+        background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,193,7,0.4) 100%);
+        border-radius: 50%;
         opacity: 0.7;
     }
     
-    .flag-svg {
-        width: 100%;
-        height: 100%;
-    }
-    
     .header-center {
-        flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding-left: 150px;
-    }
-    
-    .header-title-row {
         display: flex;
         align-items: center;
         gap: 16px;
+        z-index: 2;
     }
     
-    .emblem {
+    .emblem-icon {
+        font-size: 48px;
         filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.3));
     }
     
     .site-title {
-        font-family: "Noto Serif SC", "SimSun", "FangSong", "宋体", serif !important;
-        font-size: 38px !important;
+        font-family: "Noto Serif SC", "SimSun", "宋体", serif !important;
+        font-size: 36px !important;
         font-weight: 400 !important;
         background: linear-gradient(180deg, #FFE57F 0%, #FFD54F 40%, #FFCA28 70%, #FFB300 100%);
         -webkit-background-clip: text;
@@ -1449,32 +1361,23 @@ st.markdown("""
         white-space: nowrap;
     }
     
-    .header-right {
+    .search-box {
         position: absolute;
-        right: 60px;
+        right: 40px;
         top: 50%;
         transform: translateY(-50%);
-    }
-    
-    .search-box {
         background: rgba(255,255,255,0.15);
         border: 1px solid rgba(255,255,255,0.3);
         border-radius: 3px;
-        padding: 6px 12px;
+        padding: 6px 14px;
         display: flex;
         align-items: center;
         gap: 8px;
-        min-width: 100px;
     }
     
     .search-text {
         color: rgba(255,255,255,0.7);
         font-size: 13px;
-    }
-    
-    .search-icon {
-        font-size: 14px;
-        opacity: 0.8;
     }
     
     .nav-bar {
@@ -1483,14 +1386,7 @@ st.markdown("""
         width: calc(100% + 8rem);
         padding: 10px 0;
         border-top: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .nav-inner {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0;
-        flex-wrap: wrap;
+        text-align: center;
     }
     
     .nav-home {
@@ -1504,12 +1400,6 @@ st.markdown("""
         color: rgba(255,255,255,0.95);
         font-size: 14px;
         padding: 0 15px;
-        cursor: pointer;
-        transition: color 0.2s;
-    }
-    
-    .nav-item:hover {
-        color: #FFD54F;
     }
     
     .nav-divider {
@@ -1517,6 +1407,31 @@ st.markdown("""
         font-size: 12px;
     }
 </style>
+
+<div class="top-bar"></div>
+<div class="main-header">
+    <div class="flag-bg"></div>
+    <div class="flag-emblem"></div>
+    <div class="header-center">
+        <span class="emblem-icon">☭</span>
+        <span class="site-title">党政文献知识图谱生成</span>
+    </div>
+    <div class="search-box">
+        <span class="search-text">搜索</span>
+        <span>🔍</span>
+    </div>
+</div>
+<div class="nav-bar">
+    <span class="nav-home">首页</span>
+    <span class="nav-divider">|</span>
+    <span class="nav-item">文献编辑</span>
+    <span class="nav-divider">|</span>
+    <span class="nav-item">知识图谱</span>
+    <span class="nav-divider">|</span>
+    <span class="nav-item">数据分析</span>
+    <span class="nav-divider">|</span>
+    <span class="nav-item">成果总库</span>
+</div>
 """, unsafe_allow_html=True)
 
 # API Config
