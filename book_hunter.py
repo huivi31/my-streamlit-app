@@ -28,8 +28,8 @@ CONFIG = {
     "download_dir": "./downloads",
     "output_dir": "./graphs",
     "processed_db": "./processed_books.json",
-    "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
-    "gemini_model": "gemini-2.0-flash",
+    "gemini_api_key": os.environ.get("GEMINI_API_KEY", "AIzaSyDR2glDPtjvKaI8tO-wz04EnM7ux9lCpS0"),
+    "gemini_model": "gemini-3-flash-preview",
     "max_books_per_run": 10,
     "delay_between_downloads": 5,  # 秒
 }
