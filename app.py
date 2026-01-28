@@ -1312,15 +1312,17 @@ st.markdown("""
     }
     .header-icon {
         font-size: 42px;
-        color: #C41E3A;
+        color: #C9A227;
         line-height: 1;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
     }
     .header-title {
         font-family: "Noto Serif SC", "SimSun", "宋体", serif;
         font-size: 36px;
         font-weight: 700;
-        color: #C41E3A;
+        color: #C9A227;
         letter-spacing: 0.12em;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
     .header-line {
         display: flex;
