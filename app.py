@@ -1284,7 +1284,7 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     return G
 
 # ============================================
-# Navigation Bar - 党史文献风格（居中大标题）
+# Navigation Bar - 党史文献风格（红底烫金）
 # ============================================
 st.markdown("""
 <div class="dang-header">
@@ -1292,17 +1292,14 @@ st.markdown("""
         <span class="header-icon">☭</span>
         <span class="header-title">党政文献知识图谱生成</span>
     </div>
-    <div class="header-line">
-        <div class="line-left"></div>
-        <div class="line-center"></div>
-        <div class="line-right"></div>
-    </div>
 </div>
 <style>
     .dang-header {
-        background: #ffffff;
-        padding: 28px 0 0 0;
+        background: linear-gradient(180deg, #C41E3A 0%, #A01830 100%);
+        padding: 24px 0;
         text-align: center;
+        margin: -1rem -1rem 0 -1rem;
+        width: calc(100% + 2rem);
     }
     .header-content {
         display: flex;
@@ -1311,36 +1308,18 @@ st.markdown("""
         gap: 16px;
     }
     .header-icon {
-        font-size: 42px;
-        color: #C9A227;
+        font-size: 44px;
+        color: #F5D67B;
         line-height: 1;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     .header-title {
         font-family: "Noto Serif SC", "SimSun", "宋体", serif;
-        font-size: 36px;
+        font-size: 38px;
         font-weight: 700;
-        color: #C9A227;
-        letter-spacing: 0.12em;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    }
-    .header-line {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 20px;
-        padding: 0 60px;
-    }
-    .line-left, .line-right {
-        flex: 1;
-        height: 1px;
-        background: #e5e5e5;
-    }
-    .line-center {
-        width: 120px;
-        height: 4px;
-        background: #C41E3A;
-        margin: 0 0;
+        color: #F5D67B;
+        letter-spacing: 0.15em;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.25);
     }
 </style>
 """, unsafe_allow_html=True)
