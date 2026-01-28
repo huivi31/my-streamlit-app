@@ -1,5 +1,5 @@
 import streamlit as st
-import os, json, io, tempfile, re
+import os, json, io, tempfile, re, math, time
 from typing import List, Optional
 from enum import Enum
 from collections import defaultdict
@@ -301,7 +301,106 @@ CHUNK_SIZE = 4000
 # ============================================
 # File Reading
 # ============================================
-def read_file(f):
+
+def ocr_pdf_with_gemini(file_bytes, api_key):
+    """Fallback: Batch OCR using Gemini 3 Flash Preview (10 pages per request)"""
+    try:
+        if not api_key:
+            return ""
+        
+        # Init client
+        client = genai.Client(api_key=api_key)
+        
+        # Load PDF Structure
+        try:
+            pdf_reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            total_pages = len(pdf_reader.pages)
+        except Exception as e:
+            st.error(f"PDF解析失败，无法分卷: {e}")
+            return ""
+
+        full_text = ""
+        batch_size = 10 # 10 pages fits well within 8k output token limit
+        
+        # UI Elements
+        st.toast(f"开始全量识别，共 {total_pages} 页，将分 {math.ceil(total_pages/batch_size)} 批处理...", icon="📚")
+        status_text = st.empty()
+        progress_bar = st.progress(0)
+        
+        preview_expander = st.expander("实时识别预览 (分卷处理中)", expanded=True)
+        preview_area = preview_expander.empty()
+        
+        # Strict Model
+        model_name = "gemini-3-flash-preview"
+
+        for start_idx in range(0, total_pages, batch_size):
+            end_idx = min(start_idx + batch_size, total_pages)
+            status_text.markdown(f"🚀 正在处理第 **{start_idx+1} - {end_idx}** 页 (共 {total_pages} 页)...")
+            
+            # Create Batch PDF
+            writer = pypdf.PdfWriter()
+            # If start_idx not 0, careful with resource referencing if strict, but pypdf usually handles well
+            for i in range(start_idx, end_idx):
+                writer.add_page(pdf_reader.pages[i])
+            
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_batch:
+                writer.write(tmp_batch)
+                batch_path = tmp_batch.name
+                
+            try:
+                # Upload
+                uploaded_file = client.files.upload(file=batch_path)
+                
+                # Processing Wait
+                while uploaded_file.state.name == "PROCESSING":
+                    time.sleep(1)
+                    uploaded_file = client.files.get(name=uploaded_file.name)
+                
+                if uploaded_file.state.name == "FAILED":
+                    st.error(f"分卷 {start_idx}-{end_idx} 上传处理失败，跳过。")
+                    continue
+
+                # Generate Stream
+                response_stream = client.models.generate_content_stream(
+                    model=model_name,
+                    contents=[
+                        uploaded_file,
+                        "Please transcribe the full text content of this document verbatim. Do not summarize. Just output the text content found in the document."
+                    ]
+                )
+                
+                batch_text = ""
+                for chunk in response_stream:
+                    if chunk.text:
+                        batch_text += chunk.text
+                        # Preview: Show tail of full text + current batch growing
+                        display_text = (full_text[-200:] if full_text else "") + "\n[...接上文...]\n" + batch_text
+                        preview_area.markdown(display_text[-1000:] + "...")
+                
+                full_text += batch_text + "\n"
+                
+            except Exception as e:
+                st.warning(f"⚠️ 分卷 {start_idx}-{end_idx} 识别出现问题: {e}")
+                # Don't break, try next batch
+            finally:
+                if os.path.exists(batch_path):
+                    os.remove(batch_path)
+            
+            # Update Progress
+            progress_bar.progress(end_idx / total_pages)
+
+        status_text.success(f"✅ 全文档处理完成！共 {len(full_text)} 字")
+        time.sleep(1)
+        status_text.empty()
+        progress_bar.empty()
+        return full_text
+
+    except Exception as e:
+        st.error(f"OCR 流程致命错误: {e}")
+        return ""
+
+
+def read_file(f, api_key=None):
     name = getattr(f, "name", "")
     ext = name.lower().rsplit(".", 1)[-1] if "." in name else ""
     data = f.read()
@@ -311,8 +410,29 @@ def read_file(f):
     text = ""
     try:
         if ext == "pdf":
-            for page in pypdf.PdfReader(io.BytesIO(data)).pages:
-                text += (page.extract_text() or "") + "\n"
+            # 1. Try PyPDF first (Fast & Cheap)
+            try:
+                for page in pypdf.PdfReader(io.BytesIO(data)).pages:
+                    text += (page.extract_text() or "") + "\n"
+            except:
+                pass # Fail silently to trigger fallback
+            
+            # 2. Check sufficiency & Trigger OCR
+            # Enhanced logic: Raise threshold to 500 to catch watermarked scanned PDFs
+            clean_text = text.strip()
+            if len(clean_text) < 500:
+                if api_key:
+                    # Provide feedback to user
+                    st.toast(f"正在使用 Gemini Vision 识别扫描文档: {name}...", icon="👁️")
+                    ocr_text = ocr_pdf_with_gemini(data, api_key)
+                    
+                    # Accept OCR result if it's substantial
+                    if ocr_text and len(ocr_text) > 100:
+                        text = ocr_text
+                else:
+                    if len(clean_text) < 100:
+                        st.warning(f"文件 {name} 似乎是扫描版PDF，需要 API Key 才能进行 OCR 识别。")
+
         elif ext == "epub":
             with tempfile.NamedTemporaryFile(delete=False, suffix=".epub") as tmp:
                 tmp.write(data)
@@ -1189,7 +1309,7 @@ if st.session_state.step == 1:
                 else:
                     all_text = ""
                     for f in files:
-                        all_text += read_file(f) + "\n\n"
+                        all_text += read_file(f, api_key) + "\n\n"
                     
                     if len(all_text.strip()) < 100:
                         st.error("文件内容过少")
