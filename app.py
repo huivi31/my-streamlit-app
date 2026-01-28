@@ -1284,7 +1284,7 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     return G
 
 # ============================================
-# Navigation Bar - 党史文献风格（红底烫金 全屏）
+# Navigation Bar - 党史文献风格（红底烫金 全屏 + 背景装饰）
 # ============================================
 st.markdown("""
 <style>
@@ -1296,34 +1296,76 @@ st.markdown("""
     section[data-testid="stSidebar"] { top: 0 !important; }
 </style>
 <div class="dang-header">
+    <div class="header-bg-left"></div>
+    <div class="header-bg-right"></div>
     <div class="header-content">
-        <span class="header-icon">☭</span>
+        <svg class="header-emblem" viewBox="0 0 100 100" width="60" height="60">
+            <!-- 中共党徽 - 镰刀锤头 -->
+            <defs>
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#FFE082"/>
+                    <stop offset="30%" style="stop-color:#FFD54F"/>
+                    <stop offset="60%" style="stop-color:#FFC107"/>
+                    <stop offset="100%" style="stop-color:#FF8F00"/>
+                </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="46" fill="none" stroke="url(#goldGrad)" stroke-width="3"/>
+            <!-- 锤头 -->
+            <rect x="44" y="25" width="12" height="35" fill="url(#goldGrad)" rx="1"/>
+            <rect x="38" y="22" width="24" height="8" fill="url(#goldGrad)" rx="1"/>
+            <!-- 镰刀 -->
+            <path d="M 30 70 Q 25 50 40 35 Q 50 28 60 35 L 55 40 Q 48 35 42 40 Q 32 50 35 65 Z" fill="url(#goldGrad)"/>
+        </svg>
         <span class="header-title">党政文献知识图谱生成</span>
     </div>
 </div>
 <style>
     .dang-header {
-        background: linear-gradient(180deg, #D32F2F 0%, #B71C1C 100%);
+        background: linear-gradient(180deg, #D32F2F 0%, #C62828 50%, #B71C1C 100%);
         padding: 32px 0;
         text-align: center;
         margin: -6rem -4rem 0 -4rem;
         padding-top: 6rem;
         width: calc(100% + 8rem);
+        position: relative;
+        overflow: hidden;
+    }
+    /* 左侧华表装饰 */
+    .header-bg-left {
+        position: absolute;
+        left: 5%;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 80px;
+        height: 120px;
+        opacity: 0.08;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 120'%3E%3Crect x='25' y='10' width='10' height='100' fill='%23FFD700'/%3E%3Crect x='20' y='5' width='20' height='8' fill='%23FFD700'/%3E%3Crect x='18' y='0' width='24' height='6' fill='%23FFD700'/%3E%3Ccircle cx='30' cy='15' r='8' fill='none' stroke='%23FFD700' stroke-width='2'/%3E%3Crect x='15' y='100' width='30' height='10' fill='%23FFD700'/%3E%3Crect x='10' y='108' width='40' height='6' fill='%23FFD700'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-size: contain;
+    }
+    /* 右侧和平鸽装饰 */
+    .header-bg-right {
+        position: absolute;
+        right: 5%;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100px;
+        height: 80px;
+        opacity: 0.08;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'%3E%3Cpath d='M50 40 Q30 20 15 30 Q5 35 10 45 Q15 55 35 50 L50 60 Q45 50 50 40' fill='%23FFD700'/%3E%3Cpath d='M50 40 Q60 25 80 20 Q90 18 85 28 Q80 38 60 45 L50 60 Q55 50 50 40' fill='%23FFD700'/%3E%3Ccircle cx='20' cy='35' r='3' fill='%23FFD700'/%3E%3Cpath d='M35 50 L25 65 M40 52 L32 68 M45 55 L40 70' stroke='%23FFD700' stroke-width='2'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-size: contain;
     }
     .header-content {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 20px;
+        position: relative;
+        z-index: 2;
     }
-    .header-icon {
-        font-size: 56px;
-        background: linear-gradient(180deg, #FFD54F 0%, #FFC107 30%, #FF8F00 70%, #E65100 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.4));
-        line-height: 1;
+    .header-emblem {
+        filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.4));
     }
     .header-title {
         font-family: "Noto Serif SC", "SimSun", "宋体", serif;
