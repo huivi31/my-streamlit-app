@@ -1284,7 +1284,7 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     return G
 
 # ============================================
-# Navigation Bar - 复刻党史文献研究院风格
+# Navigation Bar - 1:1 复刻党史文献研究院
 # ============================================
 st.markdown("""
 <style>
@@ -1293,144 +1293,175 @@ st.markdown("""
     [data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
     .main .block-container { padding-top: 0 !important; max-width: 100% !important; }
     
-    .top-bar {
-        background: #8B0000;
-        height: 28px;
+    .dswxy-wrapper {
         margin: -6rem -4rem 0 -4rem;
         padding-top: 6rem;
         width: calc(100% + 8rem);
     }
     
-    .main-header {
-        background: linear-gradient(180deg, #C62828 0%, #B71C1C 100%);
-        padding: 24px 40px;
-        margin: 0 -4rem;
-        width: calc(100% + 8rem);
+    .dswxy-top {
+        background: #8B0000;
+        height: 24px;
+        position: relative;
+    }
+    
+    .dswxy-main {
+        background: linear-gradient(180deg, #D32F2F 0%, #C62828 30%, #B71C1C 100%);
+        min-height: 100px;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        min-height: 80px;
+        overflow: hidden;
     }
     
-    .flag-bg {
+    .dswxy-flag {
         position: absolute;
-        left: 20px;
+        left: 0;
         top: 0;
-        bottom: 0;
-        width: 220px;
-        background: linear-gradient(135deg, rgba(255,107,107,0.4) 0%, rgba(229,57,53,0.3) 50%, transparent 100%);
-        clip-path: polygon(0 0, 100% 20%, 80% 100%, 0 80%);
+        width: 280px;
+        height: 100%;
+        background: linear-gradient(120deg, 
+            rgba(239,83,80,0.95) 0%, 
+            rgba(229,57,53,0.85) 30%, 
+            rgba(198,40,40,0.6) 60%,
+            transparent 100%);
+        clip-path: polygon(0 0, 85% 0, 55% 100%, 0 100%);
     }
     
-    .flag-emblem {
+    .dswxy-flag-inner {
         position: absolute;
-        left: 60px;
+        left: 30px;
         top: 50%;
         transform: translateY(-50%);
-        width: 50px;
-        height: 50px;
-        background: radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,193,7,0.4) 100%);
+        width: 70px;
+        height: 70px;
+    }
+    
+    .dswxy-flag-emblem {
+        width: 70px;
+        height: 70px;
+        background: radial-gradient(circle at 30% 30%, #FFD54F 0%, #FFC107 50%, #FF8F00 100%);
         border-radius: 50%;
-        opacity: 0.7;
-    }
-    
-    .header-center {
         display: flex;
         align-items: center;
-        gap: 16px;
-        z-index: 2;
+        justify-content: center;
+        font-size: 40px;
+        color: #B71C1C;
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
     }
     
-    .emblem-icon {
-        font-size: 48px;
-        filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.3));
+    .dswxy-center {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        z-index: 10;
     }
     
-    .site-title {
-        font-family: "Noto Serif SC", "SimSun", "宋体", serif !important;
-        font-size: 36px !important;
-        font-weight: 400 !important;
-        background: linear-gradient(180deg, #FFE57F 0%, #FFD54F 40%, #FFCA28 70%, #FFB300 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        letter-spacing: 0.12em;
-        filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.25));
-        margin: 0 !important;
-        white-space: nowrap;
+    .dswxy-emblem {
+        width: 58px;
+        height: 58px;
+        border: 3px solid;
+        border-color: #FFD54F;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        background: transparent;
+        color: #FFD54F;
+        box-shadow: 0 0 10px rgba(255,215,0,0.3);
     }
     
-    .search-box {
+    .dswxy-title {
+        font-family: "Noto Serif SC", "FangSong", "SimSun", "宋体", serif;
+        font-size: 42px;
+        font-weight: 400;
+        color: #FFD54F;
+        letter-spacing: 0.08em;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        margin: 0;
+    }
+    
+    .dswxy-search {
         position: absolute;
-        right: 40px;
+        right: 30px;
         top: 50%;
         transform: translateY(-50%);
-        background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(255,255,255,0.3);
-        border-radius: 3px;
-        padding: 6px 14px;
+        background: rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.25);
+        padding: 8px 16px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        z-index: 10;
     }
     
-    .search-text {
-        color: rgba(255,255,255,0.7);
-        font-size: 13px;
+    .dswxy-search-text {
+        color: rgba(255,255,255,0.6);
+        font-size: 14px;
     }
     
-    .nav-bar {
-        background: #A51C1C;
-        margin: 0 -4rem;
-        width: calc(100% + 8rem);
-        padding: 10px 0;
-        border-top: 1px solid rgba(255,255,255,0.1);
-        text-align: center;
+    .dswxy-search-icon {
+        color: rgba(255,255,255,0.6);
+        font-size: 14px;
     }
     
-    .nav-home {
+    .dswxy-nav {
+        background: linear-gradient(180deg, #A52A2A 0%, #8B0000 100%);
+        padding: 12px 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+        flex-wrap: wrap;
+        border-top: 1px solid rgba(255,200,200,0.15);
+    }
+    
+    .dswxy-nav-home {
         color: #FFD54F;
         font-size: 14px;
         font-weight: 500;
-        padding: 0 15px;
+        padding: 0 20px;
+        border-right: 1px solid rgba(255,255,255,0.2);
     }
     
-    .nav-item {
-        color: rgba(255,255,255,0.95);
+    .dswxy-nav-item {
+        color: rgba(255,255,255,0.9);
         font-size: 14px;
-        padding: 0 15px;
+        padding: 0 20px;
+        border-right: 1px solid rgba(255,255,255,0.2);
     }
     
-    .nav-divider {
-        color: rgba(255,255,255,0.3);
-        font-size: 12px;
+    .dswxy-nav-item:last-child {
+        border-right: none;
     }
 </style>
 
-<div class="top-bar"></div>
-<div class="main-header">
-    <div class="flag-bg"></div>
-    <div class="flag-emblem"></div>
-    <div class="header-center">
-        <span class="emblem-icon">☭</span>
-        <span class="site-title">党政文献知识图谱生成</span>
+<div class="dswxy-wrapper">
+    <div class="dswxy-top"></div>
+    <div class="dswxy-main">
+        <div class="dswxy-flag">
+            <div class="dswxy-flag-inner">
+                <div class="dswxy-flag-emblem">☭</div>
+            </div>
+        </div>
+        <div class="dswxy-center">
+            <div class="dswxy-emblem">☭</div>
+            <span class="dswxy-title">党政文献知识图谱生成</span>
+        </div>
+        <div class="dswxy-search">
+            <span class="dswxy-search-text">搜索</span>
+            <span class="dswxy-search-icon">🔍</span>
+        </div>
     </div>
-    <div class="search-box">
-        <span class="search-text">搜索</span>
-        <span>🔍</span>
+    <div class="dswxy-nav">
+        <span class="dswxy-nav-home">首页</span>
+        <span class="dswxy-nav-item">文献编辑</span>
+        <span class="dswxy-nav-item">知识图谱</span>
+        <span class="dswxy-nav-item">数据分析</span>
+        <span class="dswxy-nav-item">成果总库</span>
     </div>
-</div>
-<div class="nav-bar">
-    <span class="nav-home">首页</span>
-    <span class="nav-divider">|</span>
-    <span class="nav-item">文献编辑</span>
-    <span class="nav-divider">|</span>
-    <span class="nav-item">知识图谱</span>
-    <span class="nav-divider">|</span>
-    <span class="nav-item">数据分析</span>
-    <span class="nav-divider">|</span>
-    <span class="nav-item">成果总库</span>
 </div>
 """, unsafe_allow_html=True)
 
