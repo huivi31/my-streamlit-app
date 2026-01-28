@@ -1284,9 +1284,17 @@ def build_event_graph(entities, events, relations, sensitive_node=None):
     return G
 
 # ============================================
-# Navigation Bar - 党史文献风格（红底烫金）
+# Navigation Bar - 党史文献风格（红底烫金 全屏）
 # ============================================
 st.markdown("""
+<style>
+    /* 去掉 Streamlit 默认顶部间距 */
+    .stApp > header { display: none !important; }
+    .block-container { padding-top: 0 !important; }
+    [data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
+    .main .block-container { padding-top: 0 !important; max-width: 100% !important; }
+    section[data-testid="stSidebar"] { top: 0 !important; }
+</style>
 <div class="dang-header">
     <div class="header-content">
         <span class="header-icon">☭</span>
@@ -1295,31 +1303,38 @@ st.markdown("""
 </div>
 <style>
     .dang-header {
-        background: linear-gradient(180deg, #C41E3A 0%, #A01830 100%);
-        padding: 24px 0;
+        background: linear-gradient(180deg, #D32F2F 0%, #B71C1C 100%);
+        padding: 32px 0;
         text-align: center;
-        margin: -1rem -1rem 0 -1rem;
-        width: calc(100% + 2rem);
+        margin: -6rem -4rem 0 -4rem;
+        padding-top: 6rem;
+        width: calc(100% + 8rem);
     }
     .header-content {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 16px;
+        gap: 20px;
     }
     .header-icon {
-        font-size: 44px;
-        color: #F5D67B;
+        font-size: 56px;
+        background: linear-gradient(180deg, #FFD54F 0%, #FFC107 30%, #FF8F00 70%, #E65100 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.4));
         line-height: 1;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     .header-title {
         font-family: "Noto Serif SC", "SimSun", "宋体", serif;
-        font-size: 38px;
-        font-weight: 700;
-        color: #F5D67B;
-        letter-spacing: 0.15em;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.25);
+        font-size: 46px;
+        font-weight: 800;
+        background: linear-gradient(180deg, #FFE082 0%, #FFD54F 25%, #FFC107 50%, #FFB300 75%, #FF8F00 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 0.18em;
+        filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.35));
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1384,15 +1399,6 @@ with st.sidebar:
 # Step 1: Upload & Extract
 # ============================================
 if st.session_state.step == 1:
-    st.markdown("""
-    <div class="hero">
-        <div class="hero-badge">智能文献解析系统</div>
-        <h1>解书客</h1>
-        <h2>上传文档，构建历史事件知识图谱</h2>
-        <p class="hero-desc">基于大语言模型的智能切分 · 上下文注入抽取 · 实体关系识别 · 风险评估</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
     st.markdown("<br>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
